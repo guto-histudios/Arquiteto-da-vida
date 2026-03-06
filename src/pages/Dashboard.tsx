@@ -4,11 +4,12 @@ import { TaskCard } from '../components/tasks/TaskCard';
 import { HabitoCard } from '../components/habitos/HabitoCard';
 import { KPICard } from '../components/kpis/KPICard';
 import { ImprevistoModal } from '../components/common/ImprevistoModal';
+import { MementoMori } from '../components/common/MementoMori';
 import { getDataStringBrasil, formatarData } from '../utils/dataUtils';
 import { AlertTriangle, CheckCircle, Calendar, Target, Activity } from 'lucide-react';
 
 export function Dashboard() {
-  const { tasks, habitos, kpis, mudarStatus, toggleConclusaoHabito, atualizarKPI, calcularProgressoHabitos } = useApp();
+  const { tasks, habitos, kpis, mudarStatus, toggleConclusaoHabito, atualizarKPI, calcularProgressoHabitos, config, userProfile } = useApp();
   const [isImprevistoOpen, setIsImprevistoOpen] = useState(false);
   const hoje = getDataStringBrasil();
 
@@ -17,6 +18,9 @@ export function Dashboard() {
   
   const tasksConcluidas = tasksDoDia.filter(t => t.status === 'concluida').length;
   const progressoHabitos = calcularProgressoHabitos(hoje);
+  
+  const pomodorosHoje = tasksDoDia.reduce((acc, task) => acc + (task.pomodorosFeitos || 0), 0);
+  const minutosFoco = pomodorosHoje * config.duracaoPomodoro;
 
   const handleImprevisto = (motivo: string, tempoPerdido: number, adiarTodas: boolean) => {
     console.log("Imprevisto:", { motivo, tempoPerdido, adiarTodas });
@@ -39,6 +43,12 @@ export function Dashboard() {
           <span className="font-medium">Alerta de Imprevisto</span>
         </button>
       </div>
+
+      {userProfile?.dataNascimento && userProfile?.expectativaVida && (
+        <div className="mb-8">
+          <MementoMori />
+        </div>
+      )}
 
       {/* Resumo do Dia */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -80,8 +90,8 @@ export function Dashboard() {
               <Target className="text-accent-purple" size={24} />
             </div>
           </div>
-          <div className="text-4xl font-bold mb-2">0 <span className="text-text-sec text-xl font-medium">min</span></div>
-          <p className="text-sm text-text-sec font-medium mt-2">Mantenha o foco!</p>
+          <div className="text-4xl font-bold mb-2">{minutosFoco} <span className="text-text-sec text-xl font-medium">min</span></div>
+          <p className="text-sm text-text-sec font-medium mt-2">{pomodorosHoje} ciclos concluídos</p>
         </div>
       </div>
 

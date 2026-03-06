@@ -6,7 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import { BarChart2 } from 'lucide-react';
 
 export function Analytics() {
-  const { tasks, habitos } = useApp();
+  const { tasks, habitos, config } = useApp();
 
   // Prepare data for the last 7 days
   const data = Array.from({ length: 7 }).map((_, i) => {
@@ -26,10 +26,16 @@ export function Analytics() {
     
     const habitsPercentage = habitsForDay.length > 0 ? (habitsCompleted / habitsForDay.length) * 100 : 0;
 
+    // Calculate pomodoros
+    const pomodoros = tasks.filter(t => t.data === dateStr).reduce((acc, t) => acc + (t.pomodorosFeitos || 0), 0);
+    const minutosFoco = pomodoros * config.duracaoPomodoro;
+
     return {
       name: displayDate,
       Tarefas: tasksCompleted,
       Habitos: Math.round(habitsPercentage),
+      Pomodoros: pomodoros,
+      MinutosFoco: minutosFoco,
     };
   });
 
@@ -83,6 +89,31 @@ export function Analytics() {
                 <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 <Line type="monotone" dataKey="Habitos" stroke="#22c55e" strokeWidth={3} dot={{ fill: '#1a1a1a', stroke: '#22c55e', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: '#22c55e' }} />
               </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 lg:col-span-2">
+          <h2 className="text-xl font-bold text-white mb-6">Tempo de Foco (Minutos)</h2>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333333" vertical={false} />
+                <XAxis dataKey="name" stroke="#a1a1aa" tick={{ fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                <YAxis stroke="#a1a1aa" tick={{ fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '0.75rem', color: '#fafafa', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                  itemStyle={{ color: '#ec4899' }}
+                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar dataKey="MinutosFoco" name="Minutos de Foco" fill="url(#colorFoco)" radius={[6, 6, 0, 0]} barSize={40} />
+                <defs>
+                  <linearGradient id="colorFoco" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f472b6" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#ec4899" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { Metas } from './pages/Metas';
 import { KPIs } from './pages/KPIs';
 import { Analytics } from './pages/Analytics';
 import { Configuracoes } from './pages/Configuracoes';
+import { Kanban } from './pages/Kanban';
 import { Onboarding } from './components/Onboarding';
 
 function AppContent() {
@@ -41,6 +42,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/kanban" element={<Kanban />} />
           <Route path="/habitos" element={<Habitos />} />
           <Route path="/metas" element={<Metas />} />
           <Route path="/kpis" element={<KPIs />} />

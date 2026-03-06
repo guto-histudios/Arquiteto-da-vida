@@ -6,7 +6,8 @@ const DEFAULT_CONFIG: Configuracao = {
   timezone: 'America/Sao_Paulo',
   duracaoPomodoro: 25,
   pomodorosAntesPause: 4,
-  duracaoPause: 15,
+  duracaoPausaCurta: 5,
+  duracaoPausaLonga: 15,
   limiteKanban: 3,
   onboardingCompleted: false,
 };
@@ -22,7 +23,10 @@ export function useConfiguracoes() {
     const savedHorarios = getStorageItem<HorarioFixo[]>('horariosFixos', []);
     const savedProfile = getStorageItem<UserProfile | null>('userProfile', null);
     
-    setConfig(savedConfig);
+    // Ensure new config properties are present if loading from old storage
+    const mergedConfig = { ...DEFAULT_CONFIG, ...savedConfig };
+    
+    setConfig(mergedConfig);
     setHorariosFixos(savedHorarios);
     setUserProfile(savedProfile);
     setCarregando(false);

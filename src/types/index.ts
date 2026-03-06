@@ -81,7 +81,8 @@ export interface Configuracao {
   timezone: string;
   duracaoPomodoro: number;
   pomodorosAntesPause: number;
-  duracaoPause: number;
+  duracaoPausaCurta: number;
+  duracaoPausaLonga: number;
   limiteKanban: number;
   onboardingCompleted: boolean;
 }
@@ -102,6 +103,8 @@ export interface Kaizen {
 
 export interface UserProfile {
   nome: string;
+  dataNascimento: string;
+  expectativaVida: number;
   objetivos: string;
   rotina: string;
   habitosAtuais: string;

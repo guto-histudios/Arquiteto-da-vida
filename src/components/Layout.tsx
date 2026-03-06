@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity } from 'lucide-react';
+import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
+import { PomodoroTimer } from './common/PomodoroTimer';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -11,6 +12,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
+    { name: 'Kanban', href: '/kanban', icon: KanbanSquare },
     { name: 'Hábitos', href: '/habitos', icon: Calendar },
     { name: 'Metas', href: '/metas', icon: Target },
     { name: 'KPIs', href: '/kpis', icon: Activity },
@@ -89,7 +91,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      
+      <PomodoroTimer />
     </div>
   );
 }
+
 

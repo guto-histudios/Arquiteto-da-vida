@@ -15,6 +15,8 @@ export function Onboarding() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [formData, setFormData] = useState<UserProfile>({
     nome: '',
+    dataNascimento: '',
+    expectativaVida: 75,
     objetivos: '',
     rotina: '',
     habitosAtuais: '',
@@ -31,6 +33,10 @@ export function Onboarding() {
 
   const handleNextStep = async () => {
     if (step === 1) {
+      if (!formData.nome || !formData.dataNascimento) {
+        alert("Por favor, preencha seu nome e data de nascimento.");
+        return;
+      }
       setLoading(true);
       setLoadingMessage('Gerando perguntas personalizadas...');
       try {
@@ -155,6 +161,18 @@ export function Onboarding() {
                       <label className="block text-sm font-medium mb-2 text-text-sec">Nome</label>
                       <input name="nome" value={formData.nome} onChange={handleChange} className="input-modern" placeholder="Seu nome" />
                     </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-text-sec">Data de Nascimento</label>
+                        <input type="date" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} className="input-modern" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-text-sec">Expectativa de Vida (Anos)</label>
+                        <input type="number" name="expectativaVida" value={formData.expectativaVida} onChange={(e) => setFormData({...formData, expectativaVida: Number(e.target.value)})} className="input-modern" min="1" max="120" />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium mb-2 text-text-sec">Objetivos de Produtividade</label>
                       <textarea name="objetivos" value={formData.objetivos} onChange={handleChange} className="input-modern min-h-[80px] resize-y" placeholder="O que você quer alcançar?" />

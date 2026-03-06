@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useHabitos } from '../hooks/useHabitos';
 import { useMetas } from '../hooks/useMetas';
@@ -39,6 +39,8 @@ interface AppContextData {
   setUserProfile: (profile: UserProfile | null) => void;
 
   carregando: boolean;
+  activeTaskId: string | null;
+  setActiveTaskId: (id: string | null) => void;
 }
 
 const AppContext = createContext<AppContextData>({} as AppContextData);
@@ -49,6 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const metasHook = useMetas();
   const kpisHook = useKPIs();
   const configHook = useConfiguracoes();
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   const carregando = tasksHook.carregando || habitosHook.carregando || metasHook.carregando || kpisHook.carregando || configHook.carregando;
 
@@ -100,7 +103,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userProfile: configHook.userProfile,
       setUserProfile: configHook.setUserProfile,
 
-      carregando
+      carregando,
+      activeTaskId,
+      setActiveTaskId
     }}>
       {children}
     </AppContext.Provider>
@@ -108,3 +113,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
 }
 
 export const useApp = () => useContext(AppContext);
+
