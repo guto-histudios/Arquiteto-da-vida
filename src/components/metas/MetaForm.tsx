@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Meta, MetaPeriodo } from '../../types';
-import { X } from 'lucide-react';
+import { X, Link as LinkIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getDataStringBrasil } from '../../utils/dataUtils';
+import { useApp } from '../../contexts/AppContext';
 
 interface MetaFormProps {
   isOpen: boolean;
@@ -11,17 +12,31 @@ interface MetaFormProps {
 }
 
 export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
+  const { tasks, kpis } = useApp();
+  
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [periodo, setPeriodo] = useState<MetaPeriodo>('semanal');
   const [dataInicio, setDataInicio] = useState(getDataStringBrasil());
   const [dataFim, setDataFim] = useState(getDataStringBrasil());
   const [metaProgresso, setMetaProgresso] = useState(100);
+  
+  const [taskId, setTaskId] = useState<string>('');
+  const [kpiId, setKpiId] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!taskId && !kpiId) {
+      setError('A meta DEVE estar vinculada a pelo menos uma Task ou um KPI.');
+      return;
+    }
+    
+    setError('');
+
     const newMeta: Meta = {
       id: uuidv4(),
       titulo,
@@ -32,7 +47,8 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
       progresso: 0,
       status: 'nao_iniciada',
       metaProgresso,
-      tasksVinculadas: [],
+      tasksVinculadas: taskId ? [taskId] : [],
+      kpiVinculado: kpiId || undefined,
       ehIkigai: false,
       ehShokunin: false,
     };
@@ -43,6 +59,8 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
     setDescricao('');
     setPeriodo('semanal');
     setMetaProgresso(100);
+    setTaskId('');
+    setKpiId('');
   };
 
   return (
@@ -56,6 +74,12 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-2 text-text-sec">Título</label>
             <input 
@@ -75,6 +99,47 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
               className="input-modern min-h-[80px] resize-y"
               placeholder="Detalhes adicionais..."
             />
+          </div>
+
+          <div className="bg-bg-sec/50 border border-border-subtle p-4 rounded-xl space-y-4">
+            <h3 className="text-sm font-medium text-white flex items-center gap-2">
+              <LinkIcon size={16} className="text-accent-blue" />
+              Vinculação (Obrigatório pelo menos um)
+            </h3>
+            
+            <div>
+              <label className="block text-xs font-medium mb-1 text-text-sec">Vincular a uma Task</label>
+              <select 
+                value={taskId} 
+                onChange={(e) => {
+                  setTaskId(e.target.value);
+                  setError('');
+                }} 
+                className="input-modern appearance-none"
+              >
+                <option value="">-- Nenhuma Task --</option>
+                {tasks.map(t => (
+                  <option key={t.id} value={t.id}>{t.titulo}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1 text-text-sec">Vincular a um KPI</label>
+              <select 
+                value={kpiId} 
+                onChange={(e) => {
+                  setKpiId(e.target.value);
+                  setError('');
+                }} 
+                className="input-modern appearance-none"
+              >
+                <option value="">-- Nenhum KPI --</option>
+                {kpis.map(k => (
+                  <option key={k.id} value={k.id}>{k.titulo}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-5">

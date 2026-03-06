@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Save, Trash2, Plus, Settings, Clock } from 'lucide-react';
+import { Save, Trash2, Plus, Settings, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { HorarioFixo, TipoHorarioFixo } from '../types';
+import { getDataStringBrasil } from '../utils/dataUtils';
 
 export function Configuracoes() {
-  const { userProfile, setUserProfile, horariosFixos, adicionarHorarioFixo, removerHorarioFixo, config, atualizarConfig } = useApp();
+  const { 
+    userProfile, setUserProfile, 
+    horariosFixos, adicionarHorarioFixo, removerHorarioFixo, 
+    config, atualizarConfig,
+    tasks, setTasks,
+    habitos, setHabitos
+  } = useApp();
+  
   const [profile, setProfile] = useState(userProfile || {
     nome: '',
     dataNascimento: '',
@@ -31,6 +39,8 @@ export function Configuracoes() {
     pomodorosAntesPause: config.pomodorosAntesPause,
   });
 
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
   const handleSaveProfile = () => {
     setUserProfile(profile);
     atualizarConfig(pomodoroConfig);
@@ -48,6 +58,43 @@ export function Configuracoes() {
       });
       setNewHorario({ tipo: 'outro', horaInicio: '', descricao: '' });
     }
+  };
+
+  const handleFullReset = () => {
+    localStorage.removeItem('tasks');
+    localStorage.removeItem('habitos');
+    localStorage.removeItem('metas');
+    localStorage.removeItem('kpis');
+    localStorage.removeItem('healthData');
+    localStorage.removeItem('workoutPlan');
+    localStorage.removeItem('configuracoes');
+    localStorage.removeItem('horariosFixos');
+    localStorage.removeItem('userProfile');
+    localStorage.removeItem('ultimoAcesso');
+    
+    window.location.href = '/';
+  };
+
+  const handleQuickReset = () => {
+    const hoje = getDataStringBrasil();
+    
+    // Reset today's tasks
+    const updatedTasks = tasks.map(task => {
+      if (task.data === hoje && (task.status === 'concluida' || task.status === 'nao_feita')) {
+        return { ...task, status: 'nao_iniciada' as const, xpGanho: false };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+
+    // Reset today's habits
+    const updatedHabits = habitos.map(habito => {
+      const filteredConclusoes = habito.conclusoes.filter(c => c.data !== hoje);
+      return { ...habito, conclusoes: filteredConclusoes };
+    });
+    setHabitos(updatedHabits);
+
+    alert('Tarefas e hábitos de hoje foram resetados!');
   };
 
   return (
@@ -244,8 +291,78 @@ export function Configuracoes() {
               </button>
             </div>
           </div>
+
+          {/* Reset System */}
+          <div className="glass-card p-8 border-t-4 border-error">
+            <h2 className="text-2xl font-bold tracking-tight mb-6 flex items-center gap-2 text-error">
+              <AlertTriangle size={24} />
+              Zona de Perigo
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="bg-bg-sec border border-border-subtle p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="font-bold text-white mb-1">Reset Rápido (Hoje)</h3>
+                  <p className="text-sm text-text-sec">Reseta apenas as tarefas e hábitos concluídos do dia atual.</p>
+                </div>
+                <button 
+                  onClick={handleQuickReset}
+                  className="bg-bg-main border border-border-subtle text-text-main hover:bg-border-subtle hover:text-white px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-colors"
+                >
+                  <RefreshCw size={16} />
+                  Reset Rápido
+                </button>
+              </div>
+
+              <div className="bg-error/10 border border-error/20 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="font-bold text-error mb-1">Resetar Sistema Completo</h3>
+                  <p className="text-sm text-error/80">Apaga TODOS os dados, tarefas, hábitos, metas e configurações.</p>
+                </div>
+                <button 
+                  onClick={() => setIsResetModalOpen(true)}
+                  className="bg-error text-white hover:bg-error/80 px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-colors shadow-lg shadow-error/20"
+                >
+                  <Trash2 size={16} />
+                  Limpar Dados
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-sec border border-error/30 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl shadow-error/10 animate-slide-up">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={32} className="text-error" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Tem certeza que deseja resetar?</h2>
+              <p className="text-text-sec mb-6">
+                Isso irá apagar <strong className="text-error">TODOS</strong> os dados: tasks, hábitos, metas, KPIs, planos de treino e configurações. Esta ação não pode ser desfeita.
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsResetModalOpen(false)}
+                  className="flex-1 bg-bg-main border border-border-subtle text-text-main hover:bg-border-subtle px-4 py-3 rounded-xl font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleFullReset}
+                  className="flex-1 bg-error text-white hover:bg-error/90 px-4 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-error/20"
+                >
+                  Confirmar Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

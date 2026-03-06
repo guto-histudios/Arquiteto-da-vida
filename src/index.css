@@ -4,35 +4,52 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   
-  --color-bg-main: #0a0a0a;
-  --color-bg-sec: #111111;
-  --color-bg-card: #1a1a1a;
-  --color-border-subtle: #333333;
+  --color-bg-main: #000000;
+  --color-bg-sec: #111827; /* gray-900 */
+  --color-bg-card: rgba(17, 24, 39, 0.8); /* gray-900/80 */
+  --color-border-subtle: rgba(255, 255, 255, 0.1); /* white/10 */
   
-  --color-text-main: #fafafa;
-  --color-text-sec: #a1a1aa;
+  --color-text-main: #f3f4f6; /* gray-100 */
+  --color-text-sec: #9ca3af; /* gray-400 */
   
-  --color-accent-blue: #3b82f6;
-  --color-accent-purple: #8b5cf6;
+  --color-accent-blue: #3b82f6; /* blue-500 */
+  --color-accent-purple: #8b5cf6; /* purple-500 */
   
-  --color-success: #22c55e;
-  --color-error: #ef4444;
+  --color-success: #22c55e; /* green-500 */
+  --color-error: #ef4444; /* red-500 */
   --color-warning: #f59e0b;
 }
 
 @layer base {
   body {
-    @apply bg-bg-main text-text-main font-sans antialiased selection:bg-accent-blue/30;
+    @apply bg-gradient-to-b from-gray-900 to-black min-h-screen text-gray-300 font-sans antialiased selection:bg-accent-purple/30;
+    background-attachment: fixed;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-white tracking-wide;
+  }
+  
+  h1 {
+    @apply font-bold text-3xl md:text-4xl;
+  }
+  
+  h2 {
+    @apply font-bold text-2xl md:text-3xl;
+  }
+  
+  h3 {
+    @apply font-semibold text-xl;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-bg-card/80 backdrop-blur-md border border-border-subtle rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-accent-blue/10;
+    @apply bg-bg-card backdrop-blur-md border border-border-subtle rounded-2xl shadow-2xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-accent-purple/10;
   }
   
   .btn-primary {
-    @apply bg-gradient-to-r from-accent-blue to-accent-purple text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-blue/25 active:scale-95;
+    @apply bg-gradient-to-r from-accent-purple to-accent-blue text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-purple/25 active:scale-95;
   }
   
   .btn-secondary {
@@ -40,7 +57,7 @@
   }
 
   .input-modern {
-    @apply w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec transition-all duration-300 focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-[0_0_15px_rgba(59,130,246,0.15)];
+    @apply w-full bg-bg-sec/50 border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec transition-all duration-300 focus:outline-none focus:border-accent-purple focus:ring-1 focus:ring-accent-purple focus:shadow-[0_0_15px_rgba(139,92,246,0.15)];
   }
 
   .animate-fade-in {

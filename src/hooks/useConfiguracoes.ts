@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Configuracao, HorarioFixo, UserProfile } from '../types';
+import { Configuracao, HorarioFixo, UserProfile, HealthData, WorkoutPlan } from '../types';
 import { getStorageItem, setStorageItem } from '../utils/storageUtils';
 
 const DEFAULT_CONFIG: Configuracao = {
@@ -16,12 +16,16 @@ export function useConfiguracoes() {
   const [config, setConfig] = useState<Configuracao>(DEFAULT_CONFIG);
   const [horariosFixos, setHorariosFixos] = useState<HorarioFixo[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [healthData, setHealthData] = useState<HealthData | null>(null);
+  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     const savedConfig = getStorageItem<Configuracao>('configuracoes', DEFAULT_CONFIG);
     const savedHorarios = getStorageItem<HorarioFixo[]>('horariosFixos', []);
     const savedProfile = getStorageItem<UserProfile | null>('userProfile', null);
+    const savedHealthData = getStorageItem<HealthData | null>('healthData', null);
+    const savedWorkoutPlan = getStorageItem<WorkoutPlan | null>('workoutPlan', null);
     
     // Ensure new config properties are present if loading from old storage
     const mergedConfig = { ...DEFAULT_CONFIG, ...savedConfig };
@@ -29,6 +33,8 @@ export function useConfiguracoes() {
     setConfig(mergedConfig);
     setHorariosFixos(savedHorarios);
     setUserProfile(savedProfile);
+    setHealthData(savedHealthData);
+    setWorkoutPlan(savedWorkoutPlan);
     setCarregando(false);
   }, []);
 
@@ -37,8 +43,10 @@ export function useConfiguracoes() {
       setStorageItem('configuracoes', config);
       setStorageItem('horariosFixos', horariosFixos);
       setStorageItem('userProfile', userProfile);
+      setStorageItem('healthData', healthData);
+      setStorageItem('workoutPlan', workoutPlan);
     }
-  }, [config, horariosFixos, userProfile, carregando]);
+  }, [config, horariosFixos, userProfile, healthData, workoutPlan, carregando]);
 
   const atualizarConfig = (updates: Partial<Configuracao>) => {
     setConfig(prev => ({ ...prev, ...updates }));
@@ -52,5 +60,12 @@ export function useConfiguracoes() {
     setHorariosFixos(prev => prev.filter(h => h.id !== id));
   };
 
-  return { config, atualizarConfig, horariosFixos, adicionarHorarioFixo, removerHorarioFixo, userProfile, setUserProfile, carregando };
+  return { 
+    config, atualizarConfig, 
+    horariosFixos, adicionarHorarioFixo, removerHorarioFixo, 
+    userProfile, setUserProfile, 
+    healthData, setHealthData,
+    workoutPlan, setWorkoutPlan,
+    carregando 
+  };
 }

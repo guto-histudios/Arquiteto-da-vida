@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare } from 'lucide-react';
+import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { PomodoroTimer } from './common/PomodoroTimer';
@@ -16,6 +16,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Hábitos', href: '/habitos', icon: Calendar },
     { name: 'Metas', href: '/metas', icon: Target },
     { name: 'KPIs', href: '/kpis', icon: Activity },
+    { name: 'Darebee', href: '/darebee', icon: Dumbbell },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Configurações', href: '/configuracoes', icon: Settings },
   ];
@@ -44,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <X size={24} />
           </button>
         </div>
-        <nav className="mt-6 px-4 space-y-2">
+        <nav className="mt-6 px-4 space-y-2 overflow-y-auto max-h-[calc(100vh-5rem)] pb-4 scrollbar-hide">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (

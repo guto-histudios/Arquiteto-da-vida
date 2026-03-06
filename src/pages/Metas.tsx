@@ -1,12 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { MetaCard } from '../components/metas/MetaCard';
 import { MetaForm } from '../components/metas/MetaForm';
-import { Plus, Target } from 'lucide-react';
+import { Plus, Target, Sparkles } from 'lucide-react';
+import { generateMetas, generateHarderMeta } from '../services/geminiService';
+import { Meta } from '../types';
 
 export function Metas() {
-  const { metas, adicionarMeta, atualizarMeta } = useApp();
+  const { metas, adicionarMeta, atualizarMeta, userProfile } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const semanais = metas.filter(m => m.periodo === 'semanal');
+  const mensais = metas.filter(m => m.periodo === 'mensal');
+  const trimestrais = metas.filter(m => m.periodo === 'trimestral');
+
+  // Auto-generate if empty
+  useEffect(() => {
+    const autoGenerate = async () => {
+      if (metas.length === 0 && !isGenerating) {
+        setIsGenerating(true);
+        try {
+          const novasMetas = await generateMetas(userProfile);
+          novasMetas.forEach(m => adicionarMeta(m));
+        } catch (error) {
+          console.error("Failed to auto-generate metas", error);
+        } finally {
+          setIsGenerating(false);
+        }
+      }
+    };
+    
+    // Only auto-generate once when the component mounts and metas is empty
+    const timer = setTimeout(() => {
+      if (metas.length === 0) autoGenerate();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [metas.length, userProfile]);
+
+  const handleUpdateMeta = async (id: string, updates: Partial<Meta>) => {
+    atualizarMeta(id, updates);
+
+    // Kaizen: If marked as completed, generate a harder one
+    if (updates.status === 'concluida') {
+      const metaConcluida = metas.find(m => m.id === id);
+      if (metaConcluida) {
+        try {
+          // Wait a bit so the user sees the completion animation
+          setTimeout(async () => {
+            const novaMeta = await generateHarderMeta({ ...metaConcluida, ...updates }, userProfile);
+            adicionarMeta(novaMeta);
+            alert(`Parabéns! Uma nova meta ${novaMeta.periodo} mais desafiadora foi gerada (Kaizen).`);
+          }, 1500);
+        } catch (error) {
+          console.error("Failed to generate harder meta", error);
+        }
+      }
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    try {
+      const novasMetas = await generateMetas(userProfile);
+      novasMetas.forEach(m => adicionarMeta(m));
+    } catch (error) {
+      console.error("Failed to generate metas", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -17,30 +81,113 @@ export function Metas() {
           </div>
           <h1 className="text-4xl font-bold tracking-tight">Minhas Metas</h1>
         </div>
-        <button 
-          onClick={() => setIsFormOpen(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Nova Meta
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleGenerateAI}
+            disabled={isGenerating}
+            className="btn-secondary flex items-center gap-2"
+          >
+            {isGenerating ? (
+              <div className="w-5 h-5 border-2 border-text-sec border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Sparkles size={20} className="text-accent-purple" />
+            )}
+            Gerar com IA
+          </button>
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Nova Meta
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {metas.length > 0 ? (
-          metas.map(meta => (
-            <MetaCard key={meta.id} meta={meta} onUpdate={atualizarMeta} />
-          ))
-        ) : (
-          <div className="col-span-full glass-card flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 bg-bg-sec rounded-full flex items-center justify-center mb-6 border border-border-subtle">
-              <Target size={40} className="text-text-sec" />
-            </div>
-            <h3 className="text-xl font-medium mb-2">Nenhuma meta definida</h3>
-            <p className="text-text-sec max-w-md">Onde você quer chegar? Defina suas metas para começar a acompanhar seu progresso.</p>
+      {isGenerating && metas.length === 0 && (
+        <div className="glass-card flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12 border-4 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin mb-4"></div>
+          <h3 className="text-xl font-medium mb-2">A IA está analisando seu perfil...</h3>
+          <p className="text-text-sec">Gerando 9 metas personalizadas (Semanais, Mensais e Trimestrais).</p>
+        </div>
+      )}
+
+      {!isGenerating && metas.length === 0 && (
+        <div className="glass-card flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-20 h-20 bg-bg-sec rounded-full flex items-center justify-center mb-6 border border-border-subtle">
+            <Target size={40} className="text-text-sec" />
           </div>
-        )}
-      </div>
+          <h3 className="text-xl font-medium mb-2">Nenhuma meta definida</h3>
+          <p className="text-text-sec max-w-md">Onde você quer chegar? Defina suas metas para começar a acompanhar seu progresso.</p>
+        </div>
+      )}
+
+      {metas.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Semanais */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-accent-blue/30 pb-2">
+              <h2 className="text-xl font-bold text-accent-blue flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-accent-blue"></div>
+                Semanais
+              </h2>
+              <span className="text-sm text-text-sec font-medium">{semanais.length}</span>
+            </div>
+            <div className="space-y-4">
+              {semanais.map(meta => (
+                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+              ))}
+              {semanais.length === 0 && (
+                <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
+                  Nenhuma meta semanal
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mensais */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-success/30 pb-2">
+              <h2 className="text-xl font-bold text-success flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-success"></div>
+                Mensais
+              </h2>
+              <span className="text-sm text-text-sec font-medium">{mensais.length}</span>
+            </div>
+            <div className="space-y-4">
+              {mensais.map(meta => (
+                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+              ))}
+              {mensais.length === 0 && (
+                <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
+                  Nenhuma meta mensal
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Trimestrais */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-accent-purple/30 pb-2">
+              <h2 className="text-xl font-bold text-accent-purple flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-accent-purple"></div>
+                Trimestrais
+              </h2>
+              <span className="text-sm text-text-sec font-medium">{trimestrais.length}</span>
+            </div>
+            <div className="space-y-4">
+              {trimestrais.map(meta => (
+                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+              ))}
+              {trimestrais.length === 0 && (
+                <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
+                  Nenhuma meta trimestral
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isFormOpen && (
         <MetaForm 

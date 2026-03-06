@@ -112,3 +112,37 @@ export interface UserProfile {
   haraHachiBu: string;
   shokunin: string;
 }
+
+export interface HealthData {
+  peso: number;
+  altura: number;
+  idade: number;
+  genero: string;
+  nivelAtividade: 'sedentario' | 'pouco_ativo' | 'ativo' | 'muito_ativo';
+  objetivo: 'perder_peso' | 'ganhar_musculo' | 'manter_peso' | 'condicionamento';
+  equipamentos: 'nenhum' | 'halteres' | 'elasticos' | 'academia_completa';
+  diasTreino: number;
+  tempoPorDia: number;
+  condicoesMedicas?: string;
+}
+
+export interface Exercise {
+  nome: string;
+  series: number;
+  repeticoes: string; // Ex: "10-12", "30s"
+  descanso: string; // Ex: "60s"
+  instrucoes: string;
+}
+
+export interface WorkoutDay {
+  dia: number; // 1 to 7
+  foco: string; // Ex: "Upper Body", "Cardio", "Rest"
+  exercicios: Exercise[];
+}
+
+export interface WorkoutPlan {
+  id: string;
+  dataCriacao: string;
+  dias: WorkoutDay[];
+  recomendacoesGerais: string;
+}
