@@ -11,6 +11,7 @@ import { Analytics } from './pages/Analytics';
 import { Configuracoes } from './pages/Configuracoes';
 import { Kanban } from './pages/Kanban';
 import { Darebee } from './pages/Darebee';
+import { Perfil } from './pages/Perfil';
 import { Onboarding } from './components/Onboarding';
 
 function AppContent() {
@@ -42,6 +43,7 @@ function AppContent() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/perfil" element={<Perfil />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/kanban" element={<Kanban />} />
           <Route path="/habitos" element={<Habitos />} />

@@ -6,14 +6,40 @@ import {
 } from 'recharts';
 import { subDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { BarChart2, CheckSquare, Calendar, Target, Activity } from 'lucide-react';
+import { BarChart2, CheckSquare, Calendar, Target, Activity, Download, FileText, Database } from 'lucide-react';
 import { getDataStringBrasil } from '../utils/dataUtils';
+import { generatePDFReport, exportDataJSON } from '../utils/exportUtils';
 
 const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
 
 export function Analytics() {
-  const { tasks, habitos, metas, kpis, config } = useApp();
+  const { tasks, habitos, metas, kpis, config, gamification, getLevelInfo } = useApp();
   const hoje = getDataStringBrasil();
+
+  const handleExportPDF = (period: 'diario' | 'semanal' | 'mensal') => {
+    const exportData = {
+      tasks,
+      habitos,
+      metas,
+      kpis,
+      gamification,
+      levelInfo: getLevelInfo(gamification.totalXP)
+    };
+    generatePDFReport(exportData, period);
+  };
+
+  const handleExportJSON = () => {
+    const allData = {
+      tasks,
+      habitos,
+      metas,
+      kpis,
+      config,
+      gamification,
+      timestamp: new Date().toISOString()
+    };
+    exportDataJSON(allData);
+  };
 
   // --- 1. OVERVIEW METRICS ---
   const overviewMetrics = useMemo(() => {
@@ -132,11 +158,37 @@ export function Analytics() {
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-accent-blue/10 rounded-xl">
-          <BarChart2 size={28} className="text-accent-blue" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-accent-blue/10 rounded-xl">
+            <BarChart2 size={28} className="text-accent-blue" />
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">Analytics</h1>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">Analytics</h1>
+        
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => handleExportPDF('semanal')}
+            className="bg-bg-sec border border-accent-blue/30 text-accent-blue hover:bg-accent-blue hover:text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 text-sm font-medium"
+          >
+            <FileText size={16} />
+            Exportar Semana
+          </button>
+          <button 
+            onClick={() => handleExportPDF('mensal')}
+            className="bg-bg-sec border border-accent-purple/30 text-accent-purple hover:bg-accent-purple hover:text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 text-sm font-medium"
+          >
+            <FileText size={16} />
+            Exportar Mês
+          </button>
+          <button 
+            onClick={handleExportJSON}
+            className="bg-bg-sec border border-border-subtle text-text-main hover:bg-border-subtle hover:text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 text-sm font-medium"
+          >
+            <Database size={16} />
+            Baixar Dados
+          </button>
+        </div>
       </div>
 
       {/* SEÇÃO 1: OVERVIEW DO DIA */}

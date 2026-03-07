@@ -6,6 +6,9 @@ import { KPICard } from '../components/kpis/KPICard';
 import { ImprevistoModal } from '../components/common/ImprevistoModal';
 import { MementoMori } from '../components/common/MementoMori';
 import { DailyQuote } from '../components/common/DailyQuote';
+import { ProductivityWidget } from '../components/dashboard/ProductivityWidget';
+import { ResumoSemanal } from '../components/dashboard/ResumoSemanal';
+import { ProductivityComparison } from '../components/dashboard/ProductivityComparison';
 import { getDataStringBrasil, formatarData } from '../utils/dataUtils';
 import { AlertTriangle, CheckCircle, Calendar, Target, Activity, Trophy, Star, Flame, Zap } from 'lucide-react';
 
@@ -64,6 +67,15 @@ export function Dashboard() {
           <MementoMori />
         </div>
       )}
+
+      {/* Productivity Widget */}
+      <ProductivityWidget />
+
+      {/* Comparação de Produtividade */}
+      <ProductivityComparison />
+
+      {/* Resumo Semanal */}
+      <ResumoSemanal />
 
       {/* Gamification Section */}
       <div className="glass-card p-6 relative overflow-hidden">

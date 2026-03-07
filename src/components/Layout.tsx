@@ -1,20 +1,22 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell, Star } from 'lucide-react';
+import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell, Star, Maximize } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { PomodoroTimer } from './common/PomodoroTimer';
+import { FocusMode } from './common/FocusMode';
 import { useApp } from '../contexts/AppContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const { gamification, getLevelInfo } = useApp();
+  const { gamification, getLevelInfo, isFocusMode, setIsFocusMode } = useApp();
 
   const levelInfo = getLevelInfo(gamification.totalXP);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Perfil', href: '/perfil', icon: Star },
     { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
     { name: 'Kanban', href: '/kanban', icon: KanbanSquare },
     { name: 'Hábitos', href: '/habitos', icon: Calendar },
@@ -24,6 +26,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Configurações', href: '/configuracoes', icon: Settings },
   ];
+
+  // Keyboard shortcut to enter focus mode
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
+        setIsFocusMode(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsFocusMode]);
 
   return (
     <div className="min-h-screen bg-bg-main text-text-main flex font-sans selection:bg-accent-blue/30">
@@ -42,12 +58,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       )}>
         <div className="flex items-center justify-between h-20 px-6 border-b border-border-subtle bg-bg-sec shrink-0">
           <span className="text-2xl font-bold bg-gradient-to-r from-accent-blue to-accent-purple bg-clip-text text-transparent tracking-tight">O Arquiteto</span>
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden text-text-sec hover:text-text-main transition-colors"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsFocusMode(true)}
+              className="hidden lg:flex items-center justify-center p-2 text-text-sec hover:text-accent-purple hover:bg-accent-purple/10 rounded-lg transition-colors"
+              title="Modo Foco (F)"
+            >
+              <Maximize size={20} />
+            </button>
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="lg:hidden text-text-sec hover:text-text-main transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
         
         {/* User Level Mini-Profile */}
@@ -123,6 +148,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
       
       <PomodoroTimer />
+      <FocusMode />
     </div>
   );
 }

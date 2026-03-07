@@ -60,6 +60,8 @@ interface AppContextData {
   carregando: boolean;
   activeTaskId: string | null;
   setActiveTaskId: (id: string | null) => void;
+  isFocusMode: boolean;
+  setIsFocusMode: (isFocus: boolean) => void;
 }
 
 const AppContext = createContext<AppContextData>({} as AppContextData);
@@ -72,6 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const configHook = useConfiguracoes();
   const gamificationHook = useGamification();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const carregando = tasksHook.carregando || habitosHook.carregando || metasHook.carregando || kpisHook.carregando || configHook.carregando || gamificationHook.carregando;
 
@@ -251,7 +254,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       carregando,
       activeTaskId,
-      setActiveTaskId
+      setActiveTaskId,
+      isFocusMode,
+      setIsFocusMode
     }}>
       {children}
     </AppContext.Provider>
