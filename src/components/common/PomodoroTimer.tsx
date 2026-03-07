@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
 export function PomodoroTimer() {
-  const { config, activeTaskId, setActiveTaskId, tasks, atualizarTask } = useApp();
+  const { config, activeTaskId, setActiveTaskId, tasks, atualizarTask, addXP } = useApp();
   
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeLeft, setTimeLeft] = useState(config.duracaoPomodoro * 60);
@@ -64,6 +64,9 @@ export function PomodoroTimer() {
       const newCompleted = pomodorosCompleted + 1;
       setPomodorosCompleted(newCompleted);
       
+      // Add XP for completing a Pomodoro
+      addXP(3);
+      
       // Update task if active
       if (activeTaskId && activeTask) {
         atualizarTask(activeTaskId, {
@@ -74,18 +77,18 @@ export function PomodoroTimer() {
       if (newCompleted % config.pomodorosAntesPause === 0) {
         setMode('longBreak');
         setTimeLeft(config.duracaoPausaLonga * 60);
-        sendNotification('Pomodoro Concluído!', 'Hora de uma pausa longa. Você merece!');
+        sendNotification('Pomodoro Concluído!', 'Hora de uma pausa longa. Você merece! (+3 XP)');
       } else {
         setMode('shortBreak');
         setTimeLeft(config.duracaoPausaCurta * 60);
-        sendNotification('Pomodoro Concluído!', 'Hora de uma pausa curta.');
+        sendNotification('Pomodoro Concluído!', 'Hora de uma pausa curta. (+3 XP)');
       }
     } else {
       setMode('focus');
       setTimeLeft(config.duracaoPomodoro * 60);
       sendNotification('Pausa Terminada!', 'Hora de voltar ao foco.');
     }
-  }, [mode, pomodorosCompleted, activeTaskId, activeTask, atualizarTask, config, playAlertSound, sendNotification]);
+  }, [mode, pomodorosCompleted, activeTaskId, activeTask, atualizarTask, config, playAlertSound, sendNotification, addXP]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;

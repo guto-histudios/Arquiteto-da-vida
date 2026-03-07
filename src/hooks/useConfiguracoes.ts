@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: Configuracao = {
   duracaoPausaLonga: 15,
   limiteKanban: 3,
   onboardingCompleted: false,
+  tema: 'roxo',
 };
 
 export function useConfiguracoes() {

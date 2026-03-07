@@ -1,13 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell } from 'lucide-react';
+import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell, Star } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { PomodoroTimer } from './common/PomodoroTimer';
+import { useApp } from '../contexts/AppContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const { gamification, getLevelInfo } = useApp();
+
+  const levelInfo = getLevelInfo(gamification.totalXP);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -33,10 +37,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <div className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-bg-sec border-r border-border-subtle transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-2xl lg:shadow-none",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-bg-sec border-r border-border-subtle transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-2xl lg:shadow-none flex flex-col",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between h-20 px-6 border-b border-border-subtle bg-bg-sec">
+        <div className="flex items-center justify-between h-20 px-6 border-b border-border-subtle bg-bg-sec shrink-0">
           <span className="text-2xl font-bold bg-gradient-to-r from-accent-blue to-accent-purple bg-clip-text text-transparent tracking-tight">O Arquiteto</span>
           <button 
             onClick={() => setIsSidebarOpen(false)}
@@ -45,7 +49,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <X size={24} />
           </button>
         </div>
-        <nav className="mt-6 px-4 space-y-2 overflow-y-auto max-h-[calc(100vh-5rem)] pb-4 scrollbar-hide">
+        
+        {/* User Level Mini-Profile */}
+        <div className="px-6 py-6 border-b border-border-subtle shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-2 border-accent-purple flex items-center justify-center bg-bg-main shadow-lg">
+                <span className="font-bold text-lg text-white">{levelInfo.nivel}</span>
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-accent-blue rounded-full p-0.5 border-2 border-bg-sec">
+                <Star size={10} className="text-white" fill="currentColor" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white mb-1">Nível {levelInfo.nivel}</p>
+              <div className="w-full bg-bg-main rounded-full h-1.5 border border-border-subtle overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-accent-purple to-accent-blue h-full rounded-full transition-all duration-500"
+                  style={{ width: `${levelInfo.progressoPercentual}%` }}
+                />
+              </div>
+              <p className="text-xs text-text-sec mt-1 text-right">{levelInfo.xpAtualNoNivel}/{levelInfo.xpParaProximoNivel} XP</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 mt-6 px-4 space-y-2 overflow-y-auto pb-4 scrollbar-hide">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -97,5 +126,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
 
 

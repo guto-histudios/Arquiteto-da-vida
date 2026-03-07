@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Save, Trash2, Plus, Settings, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Save, Trash2, Plus, Settings, Clock, AlertTriangle, RefreshCw, Palette } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { HorarioFixo, TipoHorarioFixo } from '../types';
 import { getDataStringBrasil } from '../utils/dataUtils';
+import { THEMES } from '../utils/themeUtils';
 
 export function Configuracoes() {
   const { 
@@ -37,6 +38,7 @@ export function Configuracoes() {
     duracaoPausaCurta: config.duracaoPausaCurta,
     duracaoPausaLonga: config.duracaoPausaLonga,
     pomodorosAntesPause: config.pomodorosAntesPause,
+    tema: config.tema || 'roxo',
   });
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -176,6 +178,37 @@ export function Configuracoes() {
         </div>
 
         <div className="space-y-8">
+          {/* Theme Settings */}
+          <div className="glass-card p-8">
+            <h2 className="text-2xl font-bold tracking-tight mb-8 border-b border-border-subtle pb-4 flex items-center gap-2">
+              <Palette size={24} className="text-accent-purple" />
+              Aparência
+            </h2>
+            
+            <div className="space-y-4">
+              <label className="block text-sm font-medium mb-2 text-text-sec">Tema de Cores</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.values(THEMES).map((tema) => (
+                  <button
+                    key={tema.id}
+                    onClick={() => setPomodoroConfig({ ...pomodoroConfig, tema: tema.id })}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-xl border transition-all duration-300 ${
+                      pomodoroConfig.tema === tema.id 
+                        ? 'bg-bg-sec border-accent-purple shadow-lg shadow-accent-purple/20' 
+                        : 'bg-bg-sec/50 border-border-subtle hover:border-text-sec'
+                    }`}
+                  >
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 rounded-full shadow-inner" style={{ backgroundColor: tema.primary }}></div>
+                      <div className="w-6 h-6 rounded-full shadow-inner" style={{ backgroundColor: tema.secondary }}></div>
+                    </div>
+                    <span className="text-sm font-medium text-text-main">{tema.nome}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Pomodoro Settings */}
           <div className="glass-card p-8">
             <h2 className="text-2xl font-bold tracking-tight mb-8 border-b border-border-subtle pb-4 flex items-center gap-2">

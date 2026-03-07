@@ -85,6 +85,7 @@ export interface Configuracao {
   duracaoPausaLonga: number;
   limiteKanban: number;
   onboardingCompleted: boolean;
+  tema?: string;
 }
 
 export interface Ikigai {
@@ -145,4 +146,19 @@ export interface WorkoutPlan {
   dataCriacao: string;
   dias: WorkoutDay[];
   recomendacoesGerais: string;
+}
+
+export interface GamificationState {
+  totalXP: number;
+  badges: string[];
+  streakDias: number;
+  ultimoAcesso: string;
+}
+
+export interface BadgeInfo {
+  id: string;
+  nome: string;
+  descricao: string;
+  icone: string;
+  cor: string;
 }
