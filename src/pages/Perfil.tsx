@@ -4,7 +4,7 @@ import { BADGES_INFO } from '../hooks/useGamification';
 import { format, subDays, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
-import { Trophy, Star, Target, CheckCircle, Calendar, Clock, Activity, Flame, Zap, Award } from 'lucide-react';
+import { Trophy, Star, Target, CheckCircle, Calendar, Clock, Activity, Flame, Zap, Award, TrendingUp } from 'lucide-react';
 
 export function Perfil() {
   const { userProfile, gamification, getLevelInfo, tasks, habitos, metas } = useApp();

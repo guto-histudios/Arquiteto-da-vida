@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Task, Habito, Meta, KPI, GamificationState } from '../types';
@@ -100,7 +100,7 @@ export const generatePDFReport = (data: ExportData, period: Period) => {
   yPos += 5;
 
   if (completedTasks.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Tarefa', 'Categoria', 'Data', 'Foco (min)']],
       body: completedTasks.map(t => [
@@ -128,7 +128,7 @@ export const generatePDFReport = (data: ExportData, period: Period) => {
   yPos += 5;
 
   if (completedHabits.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Hábito', 'Vezes Concluído']],
       body: completedHabits.map(h => [h.nome, h.total.toString()]),
@@ -157,7 +157,7 @@ export const generatePDFReport = (data: ExportData, period: Period) => {
   yPos += 5;
 
   if (completedMetas.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Meta', 'Período', 'Data Fim']],
       body: completedMetas.map(m => [
@@ -189,7 +189,7 @@ export const generatePDFReport = (data: ExportData, period: Period) => {
   yPos += 5;
 
   if (data.kpis.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['KPI', 'Atual', 'Meta', 'Progresso']],
       body: data.kpis.map(k => {
