@@ -11,6 +11,7 @@ import { Analytics } from './pages/Analytics';
 import { Configuracoes } from './pages/Configuracoes';
 import { Kanban } from './pages/Kanban';
 import { Darebee } from './pages/Darebee';
+import { HaraHachiBu } from './pages/HaraHachiBu';
 import { Perfil } from './pages/Perfil';
 import { Onboarding } from './components/Onboarding';
 
@@ -50,6 +51,7 @@ function AppContent() {
           <Route path="/metas" element={<Metas />} />
           <Route path="/kpis" element={<KPIs />} />
           <Route path="/darebee" element={<Darebee />} />
+          <Route path="/harahachibu" element={<HaraHachiBu />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="*" element={<Navigate to="/" replace />} />

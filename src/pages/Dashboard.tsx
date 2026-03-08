@@ -9,7 +9,7 @@ import { DailyQuote } from '../components/common/DailyQuote';
 import { ProductivityWidget } from '../components/dashboard/ProductivityWidget';
 import { ResumoSemanal } from '../components/dashboard/ResumoSemanal';
 import { ProductivityComparison } from '../components/dashboard/ProductivityComparison';
-import { getDataStringBrasil, formatarData } from '../utils/dataUtils';
+import { getDataStringBrasil, formatarData, deveMostrarTask } from '../utils/dataUtils';
 import { AlertTriangle, CheckCircle, Calendar, Target, Activity, Trophy, Star, Flame, Zap } from 'lucide-react';
 
 export function Dashboard() {
@@ -19,7 +19,14 @@ export function Dashboard() {
 
   const tasksDoDia = tasks
     .filter(t => t.data === hoje && t.status !== 'cancelada' && !t.concluidaDefinitivamente)
+    .filter(t => !t.deadline || t.deadline >= hoje)
+    .filter(t => deveMostrarTask(t, hoje))
     .sort((a, b) => {
+      // Fixed time tasks first
+      if (a.horarioFixo && !b.horarioFixo) return -1;
+      if (!a.horarioFixo && b.horarioFixo) return 1;
+      
+      // Then sort by time
       if (!a.horario && !b.horario) return 0;
       if (!a.horario) return 1;
       if (!b.horario) return -1;

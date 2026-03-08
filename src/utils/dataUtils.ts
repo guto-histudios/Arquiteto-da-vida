@@ -24,3 +24,11 @@ export function isDataPassada(dataTask: string): boolean {
 export function formatarData(data: string, formato: string = 'dd/MM/yyyy'): string {
   return format(parseISO(data), formato);
 }
+
+export function deveMostrarTask(task: any, dataAtualStr: string): boolean {
+  if (task.tipoRepeticao === 'semanal' && task.diasSemana && task.diasSemana.length > 0) {
+    const diaSemana = parseISO(dataAtualStr).getDay();
+    return task.diasSemana.includes(diaSemana);
+  }
+  return true;
+}

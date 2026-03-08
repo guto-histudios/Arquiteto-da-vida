@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell, Star, Maximize } from 'lucide-react';
+import { Home, CheckSquare, Calendar, Target, BarChart2, Settings, Menu, X, Activity, KanbanSquare, Dumbbell, Star, Maximize, Utensils } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { PomodoroTimer } from './common/PomodoroTimer';
@@ -23,6 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Metas', href: '/metas', icon: Target },
     { name: 'KPIs', href: '/kpis', icon: Activity },
     { name: 'Darebee', href: '/darebee', icon: Dumbbell },
+    { name: 'Hara Hachi Bu', href: '/harahachibu', icon: Utensils },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Configurações', href: '/configuracoes', icon: Settings },
   ];

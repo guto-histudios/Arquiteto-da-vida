@@ -25,17 +25,29 @@ export function ResumoSemanal() {
   const [grateful, setGrateful] = useState('');
   const [nextWeek, setNextWeek] = useState('');
 
+  const hasSavedReflection = Boolean(summary.reflectionLearned || summary.reflectionImprove || summary.reflectionGrateful || summary.reflectionNextWeek);
+
   useEffect(() => {
-    setLearned(summary.reflectionLearned || '');
-    setImprove(summary.reflectionImprove || '');
-    setGrateful(summary.reflectionGrateful || '');
-    setNextWeek(summary.reflectionNextWeek || '');
+    // Only update local state if we are NOT editing, to prevent overwriting user input
+    if (!isEditing) {
+      setLearned(summary.reflectionLearned || '');
+      setImprove(summary.reflectionImprove || '');
+      setGrateful(summary.reflectionGrateful || '');
+      setNextWeek(summary.reflectionNextWeek || '');
+    }
     
     // Auto-add to history if it doesn't exist
     if (!summaries.find(s => s.id === summary.id)) {
       addSummary(summary);
     }
-  }, [summary.id, summary.reflectionLearned, summary.reflectionImprove, summary.reflectionGrateful, summary.reflectionNextWeek, summaries, addSummary, summary]);
+  }, [summary.id, summary.reflectionLearned, summary.reflectionImprove, summary.reflectionGrateful, summary.reflectionNextWeek, summaries, addSummary, summary, isEditing]);
+
+  // Force edit mode if there is no reflection
+  useEffect(() => {
+    if (!hasSavedReflection && !isEditing) {
+      setIsEditing(true);
+    }
+  }, [hasSavedReflection, isEditing]);
 
   // Auto-save when values change
   useEffect(() => {
@@ -248,7 +260,7 @@ export function ResumoSemanal() {
               </div>
             </div>
             
-            {isEditing || !hasReflection ? (
+            {isEditing ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-sec mb-2">O que você aprendeu essa semana?</label>
@@ -288,7 +300,10 @@ export function ResumoSemanal() {
                 </div>
                 <div className="col-span-1 md:col-span-2 flex justify-end mt-2">
                   <button
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => {
+                      saveReflection(summary.id, learned, improve, grateful, nextWeek);
+                      setIsEditing(false);
+                    }}
                     className="bg-bg-sec border border-border-subtle text-white px-6 py-2 rounded-xl font-medium hover:bg-border-subtle transition-all"
                   >
                     Concluir Edição

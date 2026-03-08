@@ -3,7 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus } from '../types';
 import { TaskCard } from '../components/tasks/TaskCard';
 import { KanbanSquare, Trophy, AlertCircle, CheckSquare, RefreshCw, CheckCircle } from 'lucide-react';
-import { getDataStringBrasil } from '../utils/dataUtils';
+import { getDataStringBrasil, deveMostrarTask } from '../utils/dataUtils';
 import { clsx } from 'clsx';
 
 export function Kanban() {
@@ -14,7 +14,13 @@ export function Kanban() {
   // Only show tasks for today or overdue tasks
   const kanbanTasks = tasks
     .filter(t => !t.concluidaDefinitivamente && (t.data === hoje || (t.data < hoje && t.status !== 'concluida' && t.status !== 'cancelada')))
+    .filter(t => !t.deadline || t.deadline >= hoje)
+    .filter(t => t.data !== hoje || deveMostrarTask(t, hoje))
     .sort((a, b) => {
+      // Fixed time tasks first
+      if (a.horarioFixo && !b.horarioFixo) return -1;
+      if (!a.horarioFixo && b.horarioFixo) return 1;
+      
       if (!a.horario && !b.horario) return 0;
       if (!a.horario) return 1;
       if (!b.horario) return -1;

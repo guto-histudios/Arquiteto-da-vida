@@ -24,7 +24,9 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
   const linkedKpi = meta.kpiVinculado ? kpis.find(k => k.id === meta.kpiVinculado) : null;
 
   let progressoKpi = 0;
-  if (linkedKpi && meta.metaProgresso) {
+  if (linkedKpi && linkedKpi.valorMeta > 0) {
+    progressoKpi = Math.min((linkedKpi.valorAtual / linkedKpi.valorMeta) * 100, 100);
+  } else if (linkedKpi && meta.metaProgresso) {
     progressoKpi = Math.min((linkedKpi.valorAtual / meta.metaProgresso) * 100, 100);
   }
 
@@ -37,7 +39,11 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
 
   let progressoTotal = 0;
   if (linkedKpi && linkedTasks.length > 0) {
-    progressoTotal = (progressoKpi + progressoTasks) / 2;
+    if (progressoKpi > 0 && progressoTasks > 0) {
+      progressoTotal = (progressoKpi + progressoTasks) / 2;
+    } else {
+      progressoTotal = Math.max(progressoKpi, progressoTasks);
+    }
   } else if (linkedKpi) {
     progressoTotal = progressoKpi;
   } else if (linkedTasks.length > 0) {

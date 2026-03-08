@@ -94,9 +94,66 @@ export async function generateRoutineSuggestion(userProfile: any, answers: any) 
   }
 }
 
+export async function generateHaraHachiBuMeals(healthData: HealthData, userProfile: any): Promise<any[]> {
+  const prompt = `
+    Atue como um nutricionista especialista na filosofia Hara Hachi Bu (comer até 80% da capacidade).
+    Gere 3 OPÇÕES DE REFEIÇÕES DIÁRIAS (Opção 1, Opção 2, Opção 3) para o usuário.
+
+    Dados do usuário:
+    - Peso: ${healthData.peso} kg
+    - Altura: ${healthData.altura} cm
+    - Idade: ${healthData.idade} anos
+    - Gênero: ${healthData.genero}
+    - Nível de Atividade: ${healthData.nivelAtividade}
+    - Objetivo: ${healthData.objetivo}
+    - Condições Médicas/Restrições: ${healthData.condicoesMedicas || 'Nenhuma'}
+    - Preferências alimentares: ${userProfile?.haraHachiBu || 'Nenhuma informada'}
+
+    Cada opção deve conter 4 refeições: cafeDaManha, almoco, lancheDaTarde, jantar.
+    Para cada refeição, forneça:
+    - nome: Nome do prato
+    - quantidade: Quantidade em gramas ou ml (ex: "200g")
+    - porcoes: Medida caseira (ex: "2 fatias", "1 escumadeira")
+    - calorias: Calorias aproximadas (número)
+    - proteina: Gramas de proteína (número)
+    - carboidratos: Gramas de carboidrato (número)
+    - gorduras: Gramas de gordura (número)
+
+    Calcule as calorias totais de cada opção com base no objetivo do usuário, aplicando um leve déficit se o objetivo for perder peso, ou superávit se for ganhar massa. Lembre-se do princípio Hara Hachi Bu (porções moderadas que saciam 80%).
+
+    Retorne APENAS um array JSON com a seguinte estrutura:
+    [
+      {
+        "cafeDaManha": { "nome": "", "quantidade": "", "porcoes": "", "calorias": 0, "proteina": 0, "carboidratos": 0, "gorduras": 0 },
+        "almoco": { ... },
+        "lancheDaTarde": { ... },
+        "jantar": { ... },
+        "caloriasTotais": 0
+      }
+    ]
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const opcoes = JSON.parse(response.text || '[]');
+    return opcoes.map((op: any) => ({
+      ...op,
+      id: uuidv4()
+    }));
+  } catch (error) {
+    console.error("Erro ao gerar refeições Hara Hachi Bu:", error);
+    throw error;
+  }
+}
 export async function generateKPIs(userProfile: any, habitos: any[], metas: Meta[]): Promise<any[]> {
   const prompt = `
-    Atue como um especialista em produtividade e OKRs.
     Analise o perfil do usuário, seus hábitos e metas atuais para sugerir 3 a 5 KPIs (Key Performance Indicators) relevantes.
 
     Perfil:

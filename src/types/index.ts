@@ -25,6 +25,7 @@ export interface Task {
   metaVinculada?: string;
   xpGanho: boolean;
   horarioFixo?: boolean;
+  deadline?: string; // YYYY-MM-DD
   pomodorosFeitos: number;
   blocosQuebrados?: string[];
 }

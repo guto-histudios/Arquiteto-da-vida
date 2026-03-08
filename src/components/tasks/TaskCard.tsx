@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Task, TaskStatus } from '../../types';
 import { formatarData, isDataFutura, getDataStringBrasil } from '../../utils/dataUtils';
-import { CheckCircle, Circle, Clock, AlertTriangle, XCircle, SkipForward, Target, Edit2, Trash2, MoreVertical, CheckSquare, RefreshCw } from 'lucide-react';
+import { CheckCircle, Circle, Clock, AlertTriangle, XCircle, SkipForward, Target, Edit2, Trash2, MoreVertical, CheckSquare, RefreshCw, Lock } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useApp } from '../../contexts/AppContext';
+import { TaskDetailsModal } from './TaskDetailsModal';
+import { TaskForm } from './TaskForm';
 
 interface TaskCardProps {
   task: Task;
@@ -16,6 +18,8 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   const isActive = activeTaskId === task.id;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const horarioFim = useMemo(() => {
     if (!task.horario) return null;
@@ -101,8 +105,10 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
 
   return (
     <>
-      <div className={clsx(
-        "glass-card p-5 relative group transition-all duration-300",
+      <div 
+        onClick={() => setShowDetailsModal(true)}
+        className={clsx(
+        "glass-card p-5 relative group transition-all duration-300 cursor-pointer",
         getPriorityColor(),
         isFuturo && "opacity-50 pointer-events-none",
         (isActive || isCurrentTime) && "scale-[1.02]",
@@ -125,8 +131,14 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           )}>
             {task.horario ? (
               <span className="flex items-center gap-2">
-                <span className="text-sm font-bold bg-bg-sec px-2 py-1 rounded-md border border-border-subtle text-text-sec">
-                  {task.horario} - {horarioFim}
+                <span className={clsx(
+                  "text-sm font-bold px-2 py-1 rounded-md border",
+                  task.horarioFixo 
+                    ? "bg-accent-blue/10 border-accent-blue/30 text-accent-blue flex items-center gap-1" 
+                    : "bg-bg-sec border-border-subtle text-text-sec"
+                )}>
+                  {task.horarioFixo && <Lock size={12} />}
+                  {task.horario} {task.horarioFixo ? '[FIXO]' : `- ${horarioFim}`}
                 </span>
                 <span>{task.titulo}</span>
               </span>
@@ -136,7 +148,10 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           </h3>
           <div className="relative">
             <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
               className="p-1.5 hover:bg-bg-sec rounded-lg transition-colors text-text-sec hover:text-white"
             >
               <MoreVertical size={18} />
@@ -144,8 +159,8 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
             
             {isMenuOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-2 w-48 bg-bg-sec border border-border-subtle rounded-xl shadow-2xl py-2 z-20 animate-slide-up">
+                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-bg-sec border border-border-subtle rounded-xl shadow-2xl py-2 z-20 animate-slide-up" onClick={(e) => e.stopPropagation()}>
                   <div className="px-3 py-1 text-xs font-medium text-text-sec uppercase tracking-wider">Status</div>
                   <button onClick={() => handleStatusChange('concluida')} className="block px-4 py-2 text-sm text-success hover:bg-bg-card w-full text-left transition-colors">Concluir</button>
                   <button onClick={() => handleStatusChange('em_andamento')} className="block px-4 py-2 text-sm text-accent-purple hover:bg-bg-card w-full text-left transition-colors">Focar (Pomodoro)</button>
@@ -182,6 +197,22 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
             <div className="flex items-center gap-1.5 bg-bg-sec px-2.5 py-1 rounded-md border border-border-subtle">
               <AlertTriangle size={14} className="text-warning" />
               <span className="font-medium">{formatarData(task.prazo)}</span>
+            </div>
+          )}
+          
+          {task.deadline && (
+            <div className="flex items-center gap-1.5 bg-error/10 text-error px-2.5 py-1 rounded-md border border-error/20" title="Deadline">
+              <AlertTriangle size={14} />
+              <span className="font-medium">Deadline: {formatarData(task.deadline)}</span>
+            </div>
+          )}
+          
+          {task.tipoRepeticao === 'semanal' && task.diasSemana && task.diasSemana.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-accent-blue/10 text-accent-blue px-2.5 py-1 rounded-md border border-accent-blue/20" title="Dias de repetição">
+              <RefreshCw size={14} />
+              <span className="font-medium">
+                Repete: {task.diasSemana.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ')}
+              </span>
             </div>
           )}
           
@@ -243,6 +274,33 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           </div>
         </div>
       )}
+
+      <TaskDetailsModal
+        task={task}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        onEdit={() => {
+          setShowDetailsModal(false);
+          setShowEditModal(true);
+        }}
+        onDelete={() => {
+          setShowDetailsModal(false);
+          handleDelete();
+        }}
+        onStatusChange={(status) => {
+          setShowDetailsModal(false);
+          handleStatusChange(status);
+        }}
+      />
+
+      <TaskForm
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={(updatedTask) => {
+          atualizarTask(task.id, updatedTask);
+        }}
+        initialTask={task}
+      />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
-import { getDataStringBrasil } from '../../utils/dataUtils';
+import { getDataStringBrasil, deveMostrarTask } from '../../utils/dataUtils';
 import { subDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { LineChart, Line, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
@@ -28,7 +28,7 @@ export function ProductivityWidget() {
   // Calculate metrics for a specific date
   const calculateMetricsForDate = (dateStr: string, dateObj: Date) => {
     // Tasks
-    const tasksDoDia = tasks.filter(t => t.data === dateStr && t.status !== 'cancelada');
+    const tasksDoDia = tasks.filter(t => t.data === dateStr && t.status !== 'cancelada' && (!t.deadline || t.deadline >= dateStr) && deveMostrarTask(t, dateStr));
     const tasksConcluidas = tasksDoDia.filter(t => t.status === 'concluida').length;
     const totalTasks = tasksDoDia.length;
     const tasksScore = totalTasks > 0 ? (tasksConcluidas / totalTasks) * 100 : 0;

@@ -7,7 +7,7 @@ import {
 import { subDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart2, CheckSquare, Calendar, Target, Activity, Download, FileText, Database } from 'lucide-react';
-import { getDataStringBrasil } from '../utils/dataUtils';
+import { getDataStringBrasil, deveMostrarTask } from '../utils/dataUtils';
 import { generatePDFReport, exportDataJSON } from '../utils/exportUtils';
 
 const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
@@ -44,7 +44,7 @@ export function Analytics() {
   // --- 1. OVERVIEW METRICS ---
   const overviewMetrics = useMemo(() => {
     // Tasks %
-    const tasksHoje = tasks.filter(t => t.data === hoje && t.status !== 'cancelada');
+    const tasksHoje = tasks.filter(t => t.data === hoje && t.status !== 'cancelada' && (!t.deadline || t.deadline >= hoje) && deveMostrarTask(t, hoje));
     const tasksConcluidasHoje = tasksHoje.filter(t => t.status === 'concluida').length;
     const taxaTasks = tasksHoje.length > 0 ? Math.round((tasksConcluidasHoje / tasksHoje.length) * 100) : 0;
 
@@ -75,7 +75,7 @@ export function Analytics() {
 
       // Tasks
       const tasksCompleted = tasks.filter(t => t.data === dateStr && t.status === 'concluida').length;
-      const tasksTotal = tasks.filter(t => t.data === dateStr && t.status !== 'cancelada').length;
+      const tasksTotal = tasks.filter(t => t.data === dateStr && t.status !== 'cancelada' && (!t.deadline || t.deadline >= dateStr) && deveMostrarTask(t, dateStr)).length;
 
       // Habits
       const habitsForDay = habitos.filter(h => h.diasSemana.includes(date.getDay()));

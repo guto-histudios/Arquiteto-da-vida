@@ -9,18 +9,44 @@ interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (task: Task) => void;
+  initialTask?: Task;
 }
 
-export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
-  const { horariosFixos } = useApp();
-  const [titulo, setTitulo] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [duracao, setDuracao] = useState(30);
-  const [horario, setHorario] = useState('');
-  const [categoria, setCategoria] = useState<TaskCategoria>('trabalho');
-  const [prioridade, setPrioridade] = useState<TaskPrioridade>('media');
-  const [data, setData] = useState(getDataStringBrasil());
-  const [tipoRepeticao, setTipoRepeticao] = useState<TipoRepeticao>('uma_vez');
+export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps) {
+  const { horariosFixos, kpis, metas } = useApp();
+  const [titulo, setTitulo] = useState(initialTask?.titulo || '');
+  const [descricao, setDescricao] = useState(initialTask?.descricao || '');
+  const [duracao, setDuracao] = useState(initialTask?.duracao || 30);
+  const [horario, setHorario] = useState(initialTask?.horario || '');
+  const [categoria, setCategoria] = useState<TaskCategoria>(initialTask?.categoria || 'trabalho');
+  const [prioridade, setPrioridade] = useState<TaskPrioridade>(initialTask?.prioridade || 'media');
+  const [data, setData] = useState(initialTask?.data || getDataStringBrasil());
+  const [tipoRepeticao, setTipoRepeticao] = useState<TipoRepeticao>(initialTask?.tipoRepeticao || 'uma_vez');
+  const [diasSemana, setDiasSemana] = useState<number[]>(initialTask?.diasSemana || []);
+  const [horarioFixo, setHorarioFixo] = useState(initialTask?.horarioFixo || false);
+  const [temDeadline, setTemDeadline] = useState(!!initialTask?.deadline);
+  const [deadline, setDeadline] = useState(initialTask?.deadline || '');
+  const [kpiVinculado, setKpiVinculado] = useState(initialTask?.kpiVinculado || '');
+  const [metaVinculada, setMetaVinculada] = useState(initialTask?.metaVinculada || '');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setTitulo(initialTask?.titulo || '');
+      setDescricao(initialTask?.descricao || '');
+      setDuracao(initialTask?.duracao || 30);
+      setHorario(initialTask?.horario || '');
+      setCategoria(initialTask?.categoria || 'trabalho');
+      setPrioridade(initialTask?.prioridade || 'media');
+      setData(initialTask?.data || getDataStringBrasil());
+      setTipoRepeticao(initialTask?.tipoRepeticao || 'uma_vez');
+      setDiasSemana(initialTask?.diasSemana || []);
+      setHorarioFixo(initialTask?.horarioFixo || false);
+      setTemDeadline(!!initialTask?.deadline);
+      setDeadline(initialTask?.deadline || '');
+      setKpiVinculado(initialTask?.kpiVinculado || '');
+      setMetaVinculada(initialTask?.metaVinculada || '');
+    }
+  }, [isOpen, initialTask]);
 
   const horarioFim = useMemo(() => {
     if (!horario || !duracao) return null;
@@ -57,19 +83,25 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newTask: Task = {
-      id: uuidv4(),
+      ...(initialTask || {}),
+      id: initialTask?.id || uuidv4(),
       titulo,
       descricao,
       duracao,
-      horario: horario || undefined,
+      horario: horarioFixo && horario ? horario : undefined,
+      horarioFixo,
+      deadline: temDeadline && deadline ? deadline : undefined,
       categoria,
       prioridade,
-      status: 'nao_iniciada',
+      status: initialTask?.status || 'nao_iniciada',
       data,
       tipoRepeticao,
-      vezAtual: 1,
-      xpGanho: false,
-      pomodorosFeitos: 0,
+      diasSemana: tipoRepeticao === 'semanal' ? diasSemana : undefined,
+      vezAtual: initialTask?.vezAtual || 1,
+      xpGanho: initialTask?.xpGanho || false,
+      pomodorosFeitos: initialTask?.pomodorosFeitos || 0,
+      kpiVinculado: kpiVinculado || undefined,
+      metaVinculada: metaVinculada || undefined,
     };
     onSave(newTask);
     onClose();
@@ -78,13 +110,19 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
     setDescricao('');
     setDuracao(30);
     setHorario('');
+    setHorarioFixo(false);
+    setTemDeadline(false);
+    setDeadline('');
+    setDiasSemana([]);
+    setKpiVinculado('');
+    setMetaVinculada('');
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <div className="glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b border-border-subtle sticky top-0 bg-bg-card/95 backdrop-blur-sm z-10">
-          <h2 className="text-xl font-bold tracking-tight">Nova Tarefa</h2>
+          <h2 className="text-xl font-bold tracking-tight">{initialTask ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
           <button onClick={onClose} className="text-text-sec hover:text-white transition-colors p-2 hover:bg-bg-sec rounded-lg">
             <X size={20} />
           </button>
@@ -136,23 +174,67 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Início (Opcional)</label>
+          <div className="space-y-4 bg-bg-sec/30 p-4 rounded-xl border border-border-subtle">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-white flex items-center gap-2">
+                Horário fixo?
+              </label>
               <input 
-                type="time"
-                value={horario} 
-                onChange={(e) => setHorario(e.target.value)} 
-                className="input-modern"
+                type="checkbox" 
+                checked={horarioFixo}
+                onChange={(e) => setHorarioFixo(e.target.checked)}
+                className="w-4 h-4 rounded border-border-subtle bg-bg-main text-accent-blue focus:ring-accent-blue focus:ring-offset-bg-card"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Fim</label>
-              <div className="input-modern bg-bg-main flex items-center text-text-sec">
-                <Clock size={16} className="mr-2" />
-                {horarioFim || '--:--'}
+
+            {horarioFixo && (
+              <div className="grid grid-cols-2 gap-5 pt-2">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Início</label>
+                  <input 
+                    type="time"
+                    required={horarioFixo}
+                    value={horario} 
+                    onChange={(e) => setHorario(e.target.value)} 
+                    className="input-modern"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Fim</label>
+                  <div className="input-modern bg-bg-main flex items-center text-text-sec">
+                    <Clock size={16} className="mr-2" />
+                    {horarioFim || '--:--'}
+                  </div>
+                </div>
               </div>
+            )}
+          </div>
+
+          <div className="space-y-4 bg-bg-sec/30 p-4 rounded-xl border border-border-subtle">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-white flex items-center gap-2">
+                Tem deadline?
+              </label>
+              <input 
+                type="checkbox" 
+                checked={temDeadline}
+                onChange={(e) => setTemDeadline(e.target.checked)}
+                className="w-4 h-4 rounded border-border-subtle bg-bg-main text-accent-blue focus:ring-accent-blue focus:ring-offset-bg-card"
+              />
             </div>
+
+            {temDeadline && (
+              <div className="pt-2">
+                <label className="block text-sm font-medium mb-2 text-text-sec">Data Limite (Deadline)</label>
+                <input 
+                  type="date"
+                  required={temDeadline}
+                  value={deadline} 
+                  onChange={(e) => setDeadline(e.target.value)} 
+                  className="input-modern"
+                />
+              </div>
+            )}
           </div>
 
           {overlapWarning && (
@@ -199,9 +281,78 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
             >
               <option value="uma_vez">Uma vez</option>
               <option value="diario">Diário</option>
-              <option value="semanal">Semanal</option>
+              <option value="semanal">Semanal (Dias específicos)</option>
               <option value="personalizado">Personalizado</option>
             </select>
+          </div>
+
+          {tipoRepeticao === 'semanal' && (
+            <div className="bg-bg-sec/30 p-4 rounded-xl border border-border-subtle">
+              <label className="block text-sm font-medium mb-3 text-text-sec">Repetir nos dias:</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 0, label: 'Dom' },
+                  { id: 1, label: 'Seg' },
+                  { id: 2, label: 'Ter' },
+                  { id: 3, label: 'Qua' },
+                  { id: 4, label: 'Qui' },
+                  { id: 5, label: 'Sex' },
+                  { id: 6, label: 'Sáb' }
+                ].map(dia => (
+                  <label 
+                    key={dia.id}
+                    className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                      diasSemana.includes(dia.id) 
+                        ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' 
+                        : 'bg-bg-main border-border-subtle text-text-sec hover:border-text-sec'
+                    }`}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="hidden"
+                      checked={diasSemana.includes(dia.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDiasSemana([...diasSemana, dia.id]);
+                        } else {
+                          setDiasSemana(diasSemana.filter(d => d !== dia.id));
+                        }
+                      }}
+                    />
+                    <span className="text-sm font-medium">{dia.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-text-sec">KPI Vinculado (Opcional)</label>
+              <select 
+                value={kpiVinculado} 
+                onChange={(e) => setKpiVinculado(e.target.value)} 
+                className="input-modern appearance-none"
+              >
+                <option value="">Nenhum KPI</option>
+                {kpis.map(kpi => (
+                  <option key={kpi.id} value={kpi.id}>{kpi.titulo}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-text-sec">Meta Vinculada (Opcional)</label>
+              <select 
+                value={metaVinculada} 
+                onChange={(e) => setMetaVinculada(e.target.value)} 
+                className="input-modern appearance-none"
+              >
+                <option value="">Nenhuma Meta</option>
+                {metas.map(meta => (
+                  <option key={meta.id} value={meta.id}>{meta.titulo}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-border-subtle mt-6">

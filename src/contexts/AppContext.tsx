@@ -168,27 +168,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const novasMetas = metasHook.metas.map(meta => {
       let progressoTask = 0;
       let progressoKPI = 0;
-      let count = 0;
+      const temTask = meta.tasksVinculadas && meta.tasksVinculadas.length > 0;
+      const temKPI = !!meta.kpiVinculado;
 
-      if (meta.tasksVinculadas && meta.tasksVinculadas.length > 0) {
-        const taskId = meta.tasksVinculadas[0];
-        const task = tasksHook.tasks.find(t => t.id === taskId);
-        if (task && task.status === 'concluida') {
-          progressoTask = 100;
-        }
-        count++;
+      if (temTask) {
+        const tarefasConcluidas = meta.tasksVinculadas.filter(tid => {
+          const task = tasksHook.tasks.find(t => t.id === tid);
+          return task && task.status === 'concluida';
+        });
+        progressoTask = (tarefasConcluidas.length / meta.tasksVinculadas.length) * 100;
       }
 
-      if (meta.kpiVinculado) {
+      if (temKPI) {
         const kpi = kpisHook.kpis.find(k => k.id === meta.kpiVinculado);
-        if (kpi && meta.metaProgresso) {
+        if (kpi && kpi.valorMeta > 0) {
+          progressoKPI = Math.min((kpi.valorAtual / kpi.valorMeta) * 100, 100);
+        } else if (kpi && meta.metaProgresso) {
           progressoKPI = Math.min((kpi.valorAtual / meta.metaProgresso) * 100, 100);
         }
-        count++;
       }
 
-      if (count > 0) {
-        const progressoTotal = Math.round((progressoTask + progressoKPI) / count);
+      if (temTask || temKPI) {
+        let progressoTotal = 0;
+        
+        if (temKPI && temTask) {
+          // Se tem ambos, média
+          if (progressoKPI > 0 && progressoTask > 0) {
+            progressoTotal = Math.round((progressoKPI + progressoTask) / 2);
+          } else {
+            progressoTotal = Math.round(Math.max(progressoKPI, progressoTask));
+          }
+        } else if (temKPI) {
+          // Se só tem KPI
+          progressoTotal = Math.round(progressoKPI);
+        } else if (temTask) {
+          // Se só tem Task
+          progressoTotal = Math.round(progressoTask);
+        }
+
         const novoStatus = progressoTotal >= 100 ? 'concluida' : (progressoTotal > 0 ? 'em_andamento' : 'nao_iniciada');
         
         if (progressoTotal !== meta.progresso || novoStatus !== meta.status) {
@@ -251,6 +268,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setHealthData: configHook.setHealthData,
       workoutPlan: configHook.workoutPlan,
       setWorkoutPlan: configHook.setWorkoutPlan,
+
+      dailyMeals: haraHachiBuHook.dailyMeals,
+      saveDailyMeals: haraHachiBuHook.saveDailyMeals,
+      chooseMealOption: haraHachiBuHook.chooseMealOption,
 
       gamification: gamificationHook.gamification,
       addXP: gamificationHook.addXP,

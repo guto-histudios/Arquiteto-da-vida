@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskCard } from '../components/tasks/TaskCard';
 import { TaskForm } from '../components/tasks/TaskForm';
-import { getDataStringBrasil, isDataPassada, formatarData } from '../utils/dataUtils';
+import { getDataStringBrasil, isDataPassada, formatarData, deveMostrarTask } from '../utils/dataUtils';
 import { Plus, Filter, CheckSquare, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -17,6 +17,9 @@ export function Tasks() {
   const filteredTasks = tasks.filter(task => {
     if (task.status === 'cancelada') return false;
     
+    // Filter out tasks past their deadline
+    if (task.deadline && task.deadline < hoje) return false;
+    
     if (filter === 'historico') {
       return task.concluidaDefinitivamente === true;
     }
@@ -26,12 +29,14 @@ export function Tasks() {
     
     switch (filter) {
       case 'hoje':
-        return task.data === hoje;
+        return task.data === hoje && deveMostrarTask(task, hoje);
       case 'atrasadas':
         return isDataPassada(task.data) && task.status !== 'concluida';
       case 'concluidas':
         return task.status === 'concluida';
       default:
+        // For 'todas', if it's a repeating task, only show it if it should appear today or if its date is not today
+        if (task.data === hoje) return deveMostrarTask(task, hoje);
         return true;
     }
   }).sort((a, b) => {
@@ -41,6 +46,11 @@ export function Tasks() {
       const dateB = b.dataConclusaoDefinitiva || b.data;
       return dateB.localeCompare(dateA);
     }
+    
+    // Fixed time tasks first
+    if (a.horarioFixo && !b.horarioFixo) return -1;
+    if (!a.horarioFixo && b.horarioFixo) return 1;
+    
     if (!a.horario && !b.horario) return 0;
     if (!a.horario) return 1;
     if (!b.horario) return -1;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { startOfWeek, endOfWeek, format, isWithinInterval } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
+import { deveMostrarTask } from '../utils/dataUtils';
 
 export interface WeeklySummaryData {
   id: string;
@@ -50,7 +51,7 @@ export function useResumoSemanal() {
       return isWithinInterval(d, { start, end });
     };
 
-    const weekTasks = tasks.filter(t => isDateInWeek(t.data) && t.status !== 'cancelada');
+    const weekTasks = tasks.filter(t => isDateInWeek(t.data) && t.status !== 'cancelada' && (!t.deadline || t.deadline >= t.data) && deveMostrarTask(t, t.data));
     const tasksCompleted = weekTasks.filter(t => t.status === 'concluida').length;
     const tasksTotal = weekTasks.length;
     const totalPomodoros = weekTasks.reduce((acc, t) => acc + (t.pomodorosFeitos || 0), 0);
