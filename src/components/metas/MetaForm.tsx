@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Meta, MetaPeriodo } from '../../types';
 import { X, Link as LinkIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,9 +9,10 @@ interface MetaFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (meta: Meta) => void;
+  metaToEdit?: Meta | null;
 }
 
-export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
+export function MetaForm({ isOpen, onClose, onSave, metaToEdit }: MetaFormProps) {
   const { tasks, kpis } = useApp();
   
   const [titulo, setTitulo] = useState('');
@@ -24,6 +25,31 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
   const [taskId, setTaskId] = useState<string>('');
   const [kpiId, setKpiId] = useState<string>('');
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    if (metaToEdit && isOpen) {
+      setTitulo(metaToEdit.titulo);
+      setDescricao(metaToEdit.descricao || '');
+      setPeriodo(metaToEdit.periodo);
+      setDataInicio(metaToEdit.dataInicio);
+      setDataFim(metaToEdit.dataFim);
+      setMetaProgresso(metaToEdit.metaProgresso || 100);
+      setTaskId(metaToEdit.tasksVinculadas?.[0] || '');
+      setKpiId(metaToEdit.kpiVinculado || '');
+      setError('');
+    } else if (isOpen) {
+      // Reset form when opening for a new meta
+      setTitulo('');
+      setDescricao('');
+      setPeriodo('semanal');
+      setDataInicio(getDataStringBrasil());
+      setDataFim(getDataStringBrasil());
+      setMetaProgresso(100);
+      setTaskId('');
+      setKpiId('');
+      setError('');
+    }
+  }, [metaToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -38,36 +64,29 @@ export function MetaForm({ isOpen, onClose, onSave }: MetaFormProps) {
     setError('');
 
     const newMeta: Meta = {
-      id: uuidv4(),
+      id: metaToEdit ? metaToEdit.id : uuidv4(),
       titulo,
       descricao,
       periodo,
       dataInicio,
       dataFim,
-      progresso: 0,
-      status: 'nao_iniciada',
+      progresso: metaToEdit ? metaToEdit.progresso : 0,
+      status: metaToEdit ? metaToEdit.status : 'nao_iniciada',
       metaProgresso,
       tasksVinculadas: taskId ? [taskId] : [],
       kpiVinculado: kpiId || undefined,
-      ehIkigai: false,
-      ehShokunin: false,
+      ehIkigai: metaToEdit ? metaToEdit.ehIkigai : false,
+      ehShokunin: metaToEdit ? metaToEdit.ehShokunin : false,
     };
     onSave(newMeta);
     onClose();
-    // Reset form
-    setTitulo('');
-    setDescricao('');
-    setPeriodo('semanal');
-    setMetaProgresso(100);
-    setTaskId('');
-    setKpiId('');
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
         <div className="flex justify-between items-center p-6 border-b border-border-subtle sticky top-0 bg-bg-card/95 backdrop-blur-sm z-10">
-          <h2 className="text-xl font-bold tracking-tight">Nova Meta</h2>
+          <h2 className="text-xl font-bold tracking-tight">{metaToEdit ? 'Editar Meta' : 'Nova Meta'}</h2>
           <button onClick={onClose} className="text-text-sec hover:text-white transition-colors p-2 hover:bg-bg-sec rounded-lg">
             <X size={20} />
           </button>

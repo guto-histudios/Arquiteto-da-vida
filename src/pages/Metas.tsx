@@ -7,9 +7,10 @@ import { generateMetas, generateHarderMeta } from '../services/geminiService';
 import { Meta } from '../types';
 
 export function Metas() {
-  const { metas, adicionarMeta, atualizarMeta, userProfile } = useApp();
+  const { metas, adicionarMeta, atualizarMeta, removerMeta, userProfile } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [metaToEdit, setMetaToEdit] = useState<Meta | null>(null);
 
   const semanais = metas.filter(m => m.periodo === 'semanal');
   const mensais = metas.filter(m => m.periodo === 'mensal');
@@ -58,6 +59,31 @@ export function Metas() {
         }
       }
     }
+  };
+
+  const handleDeleteMeta = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta meta?')) {
+      removerMeta(id);
+    }
+  };
+
+  const handleEditMeta = (meta: Meta) => {
+    setMetaToEdit(meta);
+    setIsFormOpen(true);
+  };
+
+  const handleSaveMeta = (meta: Meta) => {
+    if (metaToEdit) {
+      atualizarMeta(meta.id, meta);
+    } else {
+      adicionarMeta(meta);
+    }
+    setMetaToEdit(null);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setMetaToEdit(null);
   };
 
   const handleGenerateAI = async () => {
@@ -135,7 +161,13 @@ export function Metas() {
             </div>
             <div className="space-y-4">
               {semanais.map(meta => (
-                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+                <MetaCard 
+                  key={meta.id} 
+                  meta={meta} 
+                  onUpdate={handleUpdateMeta} 
+                  onDelete={handleDeleteMeta}
+                  onEdit={handleEditMeta}
+                />
               ))}
               {semanais.length === 0 && (
                 <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
@@ -156,7 +188,13 @@ export function Metas() {
             </div>
             <div className="space-y-4">
               {mensais.map(meta => (
-                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+                <MetaCard 
+                  key={meta.id} 
+                  meta={meta} 
+                  onUpdate={handleUpdateMeta} 
+                  onDelete={handleDeleteMeta}
+                  onEdit={handleEditMeta}
+                />
               ))}
               {mensais.length === 0 && (
                 <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
@@ -177,7 +215,13 @@ export function Metas() {
             </div>
             <div className="space-y-4">
               {trimestrais.map(meta => (
-                <MetaCard key={meta.id} meta={meta} onUpdate={handleUpdateMeta} />
+                <MetaCard 
+                  key={meta.id} 
+                  meta={meta} 
+                  onUpdate={handleUpdateMeta} 
+                  onDelete={handleDeleteMeta}
+                  onEdit={handleEditMeta}
+                />
               ))}
               {trimestrais.length === 0 && (
                 <div className="text-center py-8 text-text-sec text-sm border border-dashed border-border-subtle rounded-xl">
@@ -192,8 +236,9 @@ export function Metas() {
       {isFormOpen && (
         <MetaForm 
           isOpen={isFormOpen} 
-          onClose={() => setIsFormOpen(false)} 
-          onSave={adicionarMeta} 
+          onClose={handleCloseForm} 
+          onSave={handleSaveMeta} 
+          metaToEdit={metaToEdit}
         />
       )}
     </div>

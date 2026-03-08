@@ -94,6 +94,54 @@ export async function generateRoutineSuggestion(userProfile: any, answers: any) 
   }
 }
 
+export async function generateKPIs(userProfile: any, habitos: any[], metas: Meta[]): Promise<any[]> {
+  const prompt = `
+    Atue como um especialista em produtividade e OKRs.
+    Analise o perfil do usuário, seus hábitos e metas atuais para sugerir 3 a 5 KPIs (Key Performance Indicators) relevantes.
+
+    Perfil:
+    Objetivos: ${userProfile?.objetivos || 'Não informado'}
+    Rotina: ${userProfile?.rotina || 'Não informado'}
+
+    Hábitos que deseja desenvolver:
+    ${habitos.map(h => `- ${h.nome}`).join('\n') || 'Nenhum hábito cadastrado'}
+
+    Metas atuais:
+    ${metas.map(m => `- ${m.titulo} (${m.periodo})`).join('\n') || 'Nenhuma meta cadastrada'}
+
+    Gere KPIs que sejam mensuráveis, específicos e relevantes para este contexto.
+    
+    Retorne APENAS um array JSON com a seguinte estrutura:
+    [
+      {
+        "titulo": "string (ex: Horas de estudo por semana)",
+        "valorMeta": number (ex: 10),
+        "unidade": "string (ex: horas, dias, %, kg, páginas)",
+        "descricao": "string (Sugestão de como medir e por que é importante)"
+      }
+    ]
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const kpis = JSON.parse(response.text || '[]');
+    return kpis.map((k: any) => ({
+      ...k,
+      id: uuidv4(),
+      valorAtual: 0
+    }));
+  } catch (error) {
+    console.error("Erro ao gerar KPIs:", error);
+    throw error;
+  }
+}
 export async function generateDarebeePlan(healthData: HealthData): Promise<WorkoutPlan> {
   const prompt = `
     Atue como um personal trainer especialista na metodologia Darebee (www.darebee.com).

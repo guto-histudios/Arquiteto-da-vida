@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Task, TaskStatus } from '../../types';
-import { formatarData, isDataFutura } from '../../utils/dataUtils';
-import { CheckCircle, Circle, Clock, AlertTriangle, XCircle, SkipForward, Target, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { formatarData, isDataFutura, getDataStringBrasil } from '../../utils/dataUtils';
+import { CheckCircle, Circle, Clock, AlertTriangle, XCircle, SkipForward, Target, Edit2, Trash2, MoreVertical, CheckSquare, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useApp } from '../../contexts/AppContext';
 
@@ -12,9 +12,30 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   const isFuturo = isDataFutura(task.data);
-  const { activeTaskId, setActiveTaskId, removerTask } = useApp();
+  const { activeTaskId, setActiveTaskId, removerTask, atualizarTask } = useApp();
   const isActive = activeTaskId === task.id;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  const horarioFim = useMemo(() => {
+    if (!task.horario) return null;
+    const [h, m] = task.horario.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m + task.duracao, 0, 0);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }, [task.horario, task.duracao]);
+
+  const isCurrentTime = useMemo(() => {
+    if (!task.horario || task.data !== getDataStringBrasil() || task.status === 'concluida') return false;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    const [h, m] = task.horario.split(':').map(Number);
+    const startMinutes = h * 60 + m;
+    const endMinutes = startMinutes + task.duracao;
+    
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  }, [task.horario, task.duracao, task.data, task.status]);
 
   const getStatusIcon = () => {
     switch (task.status) {
@@ -28,6 +49,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
 
   const getPriorityColor = () => {
     if (isActive) return 'border-l-4 border-accent-purple shadow-accent-purple/20 shadow-lg';
+    if (isCurrentTime) return 'border-l-4 border-emerald-400 shadow-emerald-400/20 shadow-lg ring-1 ring-emerald-400/50';
     switch (task.prioridade) {
       case 'alta': return 'border-l-4 border-error';
       case 'media': return 'border-l-4 border-warning';
@@ -37,6 +59,12 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   };
 
   const handleStatusChange = (status: TaskStatus) => {
+    if (status === 'concluida' && task.status !== 'concluida') {
+      setShowCompletionModal(true);
+      setIsMenuOpen(false);
+      return;
+    }
+
     onStatusChange(task.id, status);
     if (status === 'em_andamento') {
       setActiveTaskId(task.id);
@@ -46,6 +74,25 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
     setIsMenuOpen(false);
   };
 
+  const handleConfirmCompletion = (continua: boolean) => {
+    if (!continua) {
+      atualizarTask(task.id, { 
+        concluidaDefinitivamente: true,
+        dataConclusaoDefinitiva: getDataStringBrasil()
+      });
+    } else {
+      atualizarTask(task.id, {
+        vezAtual: (task.vezAtual || 1) + 1
+      });
+    }
+    
+    onStatusChange(task.id, 'concluida');
+    if (isActive) {
+      setActiveTaskId(null);
+    }
+    setShowCompletionModal(false);
+  };
+
   const handleDelete = () => {
     if (window.confirm('Tem certeza que deseja excluir esta tarefa?')) {
       removerTask(task.id);
@@ -53,88 +100,150 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   };
 
   return (
-    <div className={clsx(
-      "glass-card p-5 relative group transition-all duration-300",
-      getPriorityColor(),
-      isFuturo && "opacity-50 pointer-events-none",
-      isActive && "bg-accent-purple/5 scale-[1.02]"
-    )}>
-      {isActive && (
-        <div className="absolute top-0 right-0 w-16 h-16 bg-accent-purple/10 rounded-bl-full -z-10"></div>
-      )}
-      
-      <div className="flex justify-between items-start mb-3">
-        <h3 className={clsx(
-          "font-semibold text-lg tracking-tight pr-8", 
-          task.status === 'concluida' && "line-through text-text-sec",
-          isActive && "text-accent-purple"
-        )}>
-          {task.titulo}
-        </h3>
-        <div className="relative">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1.5 hover:bg-bg-sec rounded-lg transition-colors text-text-sec hover:text-white"
-          >
-            <MoreVertical size={18} />
-          </button>
-          
-          {isMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
-              <div className="absolute right-0 mt-2 w-48 bg-bg-sec border border-border-subtle rounded-xl shadow-2xl py-2 z-20 animate-slide-up">
-                <div className="px-3 py-1 text-xs font-medium text-text-sec uppercase tracking-wider">Status</div>
-                <button onClick={() => handleStatusChange('concluida')} className="block px-4 py-2 text-sm text-success hover:bg-bg-card w-full text-left transition-colors">Concluir</button>
-                <button onClick={() => handleStatusChange('em_andamento')} className="block px-4 py-2 text-sm text-accent-purple hover:bg-bg-card w-full text-left transition-colors">Focar (Pomodoro)</button>
-                <button onClick={() => handleStatusChange('nao_feita')} className="block px-4 py-2 text-sm text-warning hover:bg-bg-card w-full text-left transition-colors">Não Feita (Adiar)</button>
-                <button onClick={() => handleStatusChange('cancelada')} className="block px-4 py-2 text-sm text-error hover:bg-bg-card w-full text-left transition-colors">Cancelar</button>
-                
-                <div className="border-t border-border-subtle my-1"></div>
-                <div className="px-3 py-1 text-xs font-medium text-text-sec uppercase tracking-wider">Ações</div>
-                <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-bg-card w-full text-left transition-colors">
-                  <Trash2 size={14} /> Excluir
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {task.descricao && <p className="text-text-sec text-sm mb-4 leading-relaxed">{task.descricao}</p>}
-
-      <div className="flex flex-wrap items-center gap-3 text-xs text-text-sec mt-4">
-        <div className="flex items-center gap-1.5 bg-bg-sec px-2.5 py-1 rounded-md border border-border-subtle">
-          <Clock size={14} className="text-accent-blue" />
-          <span className="font-medium">{task.duracao} min</span>
-        </div>
+    <>
+      <div className={clsx(
+        "glass-card p-5 relative group transition-all duration-300",
+        getPriorityColor(),
+        isFuturo && "opacity-50 pointer-events-none",
+        (isActive || isCurrentTime) && "scale-[1.02]",
+        isCurrentTime && "bg-emerald-400/5",
+        isActive && "bg-accent-purple/5"
+      )}>
+        {isActive && (
+          <div className="absolute top-0 right-0 w-16 h-16 bg-accent-purple/10 rounded-bl-full -z-10"></div>
+        )}
+        {isCurrentTime && !isActive && (
+          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-400/10 rounded-bl-full -z-10"></div>
+        )}
         
-        {task.pomodorosFeitos > 0 && (
-          <div className="flex items-center gap-1.5 bg-accent-purple/10 text-accent-purple px-2.5 py-1 rounded-md border border-accent-purple/20">
-            <Target size={14} />
-            <span className="font-medium">{task.pomodorosFeitos} ciclos</span>
+        <div className="flex justify-between items-start mb-3">
+          <h3 className={clsx(
+            "font-semibold text-lg tracking-tight pr-8", 
+            task.status === 'concluida' && "line-through text-text-sec",
+            isActive && "text-accent-purple",
+            isCurrentTime && !isActive && "text-emerald-400"
+          )}>
+            {task.horario ? (
+              <span className="flex items-center gap-2">
+                <span className="text-sm font-bold bg-bg-sec px-2 py-1 rounded-md border border-border-subtle text-text-sec">
+                  {task.horario} - {horarioFim}
+                </span>
+                <span>{task.titulo}</span>
+              </span>
+            ) : (
+              task.titulo
+            )}
+          </h3>
+          <div className="relative">
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-1.5 hover:bg-bg-sec rounded-lg transition-colors text-text-sec hover:text-white"
+            >
+              <MoreVertical size={18} />
+            </button>
+            
+            {isMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-bg-sec border border-border-subtle rounded-xl shadow-2xl py-2 z-20 animate-slide-up">
+                  <div className="px-3 py-1 text-xs font-medium text-text-sec uppercase tracking-wider">Status</div>
+                  <button onClick={() => handleStatusChange('concluida')} className="block px-4 py-2 text-sm text-success hover:bg-bg-card w-full text-left transition-colors">Concluir</button>
+                  <button onClick={() => handleStatusChange('em_andamento')} className="block px-4 py-2 text-sm text-accent-purple hover:bg-bg-card w-full text-left transition-colors">Focar (Pomodoro)</button>
+                  <button onClick={() => handleStatusChange('nao_feita')} className="block px-4 py-2 text-sm text-warning hover:bg-bg-card w-full text-left transition-colors">Não Feita (Adiar)</button>
+                  <button onClick={() => handleStatusChange('cancelada')} className="block px-4 py-2 text-sm text-error hover:bg-bg-card w-full text-left transition-colors">Cancelar</button>
+                  
+                  <div className="border-t border-border-subtle my-1"></div>
+                  <div className="px-3 py-1 text-xs font-medium text-text-sec uppercase tracking-wider">Ações</div>
+                  <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-bg-card w-full text-left transition-colors">
+                    <Trash2 size={14} /> Excluir
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
-        {task.prazo && (
+        {task.descricao && <p className="text-text-sec text-sm mb-4 leading-relaxed">{task.descricao}</p>}
+
+        <div className="flex flex-wrap items-center gap-3 text-xs text-text-sec mt-4">
           <div className="flex items-center gap-1.5 bg-bg-sec px-2.5 py-1 rounded-md border border-border-subtle">
-            <AlertTriangle size={14} className="text-warning" />
-            <span className="font-medium">{formatarData(task.prazo)}</span>
+            <Clock size={14} className="text-accent-blue" />
+            <span className="font-medium">{task.duracao} min</span>
           </div>
-        )}
-        <span className="bg-bg-sec border border-border-subtle px-2.5 py-1 rounded-md text-text-sec capitalize font-medium">{task.categoria}</span>
-        <span className="flex items-center gap-1 ml-auto" title="Status atual">
-          {getStatusIcon()}
-        </span>
-      </div>
+          
+          {task.pomodorosFeitos > 0 && (
+            <div className="flex items-center gap-1.5 bg-accent-purple/10 text-accent-purple px-2.5 py-1 rounded-md border border-accent-purple/20">
+              <Target size={14} />
+              <span className="font-medium">{task.pomodorosFeitos} ciclos</span>
+            </div>
+          )}
 
-      {isFuturo && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bg-main/60 backdrop-blur-sm rounded-2xl">
-          <span className="text-sm font-medium bg-bg-card border border-border-subtle px-4 py-2 rounded-xl shadow-lg">
-            Disponível em {formatarData(task.data)}
+          {task.prazo && (
+            <div className="flex items-center gap-1.5 bg-bg-sec px-2.5 py-1 rounded-md border border-border-subtle">
+              <AlertTriangle size={14} className="text-warning" />
+              <span className="font-medium">{formatarData(task.prazo)}</span>
+            </div>
+          )}
+          
+          {task.vezAtual > 1 && (
+            <div className="flex items-center gap-1.5 bg-bg-sec px-2.5 py-1 rounded-md border border-border-subtle" title="Vezes repetida">
+              <RefreshCw size={14} className="text-text-sec" />
+              <span className="font-medium text-text-sec">{task.vezAtual}x</span>
+            </div>
+          )}
+          
+          <span className="bg-bg-sec border border-border-subtle px-2.5 py-1 rounded-md text-text-sec capitalize font-medium">{task.categoria}</span>
+          <span className="flex items-center gap-1 ml-auto" title="Status atual">
+            {getStatusIcon()}
           </span>
         </div>
+
+        {isFuturo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-bg-main/60 backdrop-blur-sm rounded-2xl">
+            <span className="text-sm font-medium bg-bg-card border border-border-subtle px-4 py-2 rounded-xl shadow-lg">
+              Disponível em {formatarData(task.data)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {showCompletionModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass-card w-full max-w-md p-8 text-center animate-slide-up">
+            <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-success/30">
+              <CheckSquare size={40} className="text-success" />
+            </div>
+            
+            <h2 className="text-2xl font-bold mb-3">Tarefa Concluída!</h2>
+            <p className="text-text-sec mb-8 text-lg">A tarefa foi finalizada ou vai continuar?</p>
+            
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => handleConfirmCompletion(true)}
+                className="bg-bg-sec border border-border-subtle hover:border-accent-blue/50 hover:bg-accent-blue/10 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 group"
+              >
+                <RefreshCw size={24} className="text-accent-blue group-hover:rotate-180 transition-transform duration-500" />
+                <div className="text-left">
+                  <div className="font-bold text-lg">Sim, continua</div>
+                  <div className="text-sm text-text-sec">Volta amanhã como não iniciada</div>
+                </div>
+              </button>
+              
+              <button 
+                onClick={() => handleConfirmCompletion(false)}
+                className="bg-success/20 border border-success/50 hover:bg-success hover:text-white text-success px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300"
+              >
+                <CheckCircle size={24} />
+                <div className="text-left">
+                  <div className="font-bold text-lg">Não, termina aqui</div>
+                  <div className="text-sm opacity-80">Vai para o histórico definitivo</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

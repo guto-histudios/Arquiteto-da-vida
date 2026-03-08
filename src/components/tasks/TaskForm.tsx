@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Task, TaskCategoria, TaskPrioridade, TipoRepeticao } from '../../types';
-import { X } from 'lucide-react';
+import { X, Clock, AlertTriangle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getDataStringBrasil } from '../../utils/dataUtils';
+import { useApp } from '../../contexts/AppContext';
 
 interface TaskFormProps {
   isOpen: boolean;
@@ -11,13 +12,45 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
+  const { horariosFixos } = useApp();
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [duracao, setDuracao] = useState(30);
+  const [horario, setHorario] = useState('');
   const [categoria, setCategoria] = useState<TaskCategoria>('trabalho');
   const [prioridade, setPrioridade] = useState<TaskPrioridade>('media');
   const [data, setData] = useState(getDataStringBrasil());
   const [tipoRepeticao, setTipoRepeticao] = useState<TipoRepeticao>('uma_vez');
+
+  const horarioFim = useMemo(() => {
+    if (!horario || !duracao) return null;
+    const [h, m] = horario.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m + duracao, 0, 0);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }, [horario, duracao]);
+
+  const overlapWarning = useMemo(() => {
+    if (!horario || !horarioFim || !horariosFixos.length) return null;
+    
+    const taskStart = parseInt(horario.replace(':', ''));
+    const taskEnd = parseInt(horarioFim.replace(':', ''));
+
+    for (const fixo of horariosFixos) {
+      if (!fixo.horaInicio) continue;
+      const fixoStart = parseInt(fixo.horaInicio.replace(':', ''));
+      let fixoEnd = fixoStart + 60; // default 1h if no end time
+      if (fixo.horaFim) {
+        fixoEnd = parseInt(fixo.horaFim.replace(':', ''));
+      }
+
+      // Check overlap
+      if (taskStart < fixoEnd && taskEnd > fixoStart) {
+        return `Atenção: Este horário sobrepõe com seu horário fixo: ${fixo.descricao} (${fixo.horaInicio}${fixo.horaFim ? ` - ${fixo.horaFim}` : ''})`;
+      }
+    }
+    return null;
+  }, [horario, horarioFim, horariosFixos]);
 
   if (!isOpen) return null;
 
@@ -28,6 +61,7 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
       titulo,
       descricao,
       duracao,
+      horario: horario || undefined,
       categoria,
       prioridade,
       status: 'nao_iniciada',
@@ -43,6 +77,7 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
     setTitulo('');
     setDescricao('');
     setDuracao(30);
+    setHorario('');
   };
 
   return (
@@ -79,16 +114,6 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
 
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium mb-2 text-text-sec">Duração (min)</label>
-              <input 
-                type="number"
-                required
-                value={duracao} 
-                onChange={(e) => setDuracao(Number(e.target.value))} 
-                className="input-modern"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-medium mb-2 text-text-sec">Data</label>
               <input 
                 type="date"
@@ -98,7 +123,44 @@ export function TaskForm({ isOpen, onClose, onSave }: TaskFormProps) {
                 className="input-modern"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-text-sec">Duração (min)</label>
+              <input 
+                type="number"
+                required
+                min="1"
+                value={duracao} 
+                onChange={(e) => setDuracao(Number(e.target.value))} 
+                className="input-modern"
+              />
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Início (Opcional)</label>
+              <input 
+                type="time"
+                value={horario} 
+                onChange={(e) => setHorario(e.target.value)} 
+                className="input-modern"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Fim</label>
+              <div className="input-modern bg-bg-main flex items-center text-text-sec">
+                <Clock size={16} className="mr-2" />
+                {horarioFim || '--:--'}
+              </div>
+            </div>
+          </div>
+
+          {overlapWarning && (
+            <div className="bg-warning/10 border border-warning/30 text-warning p-3 rounded-lg flex items-start gap-2 text-sm">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <p>{overlapWarning}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-5">
             <div>

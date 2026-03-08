@@ -54,7 +54,7 @@ export function KPICard({ kpi, onUpdate }: KPICardProps) {
         <span className="text-text-sec text-sm mb-1.5 font-medium">/ {kpi.valorMeta} {kpi.unidade}</span>
       </div>
 
-      <div className="w-full bg-bg-sec rounded-full h-3 border border-border-subtle overflow-hidden">
+      <div className="w-full bg-bg-sec rounded-full h-3 border border-border-subtle overflow-hidden mb-3">
         <div 
           className="bg-gradient-to-r from-accent-blue to-accent-purple h-full rounded-full transition-all duration-1000 ease-out relative" 
           style={{ width: `${progress}%` }}
@@ -62,6 +62,12 @@ export function KPICard({ kpi, onUpdate }: KPICardProps) {
           <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
         </div>
       </div>
+
+      {kpi.descricao && (
+        <p className="text-xs text-text-sec mt-3 pt-3 border-t border-border-subtle/50 leading-relaxed">
+          {kpi.descricao}
+        </p>
+      )}
     </div>
   );
 }

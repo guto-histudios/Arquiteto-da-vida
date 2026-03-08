@@ -9,7 +9,26 @@ export function useTasks() {
 
   useEffect(() => {
     const salvos = getStorageItem<Task[]>('tasks', []);
-    setTasks(salvos);
+    const hoje = getDataStringBrasil();
+    const ultimoAcessoTasks = getStorageItem<string>('ultimoAcessoTasks', hoje);
+
+    let tasksParaSalvar = salvos;
+
+    if (ultimoAcessoTasks !== hoje) {
+      tasksParaSalvar = salvos.map(task => {
+        if (task.concluidaDefinitivamente) return task;
+        
+        if (task.status === 'concluida' || task.status === 'nao_feita') {
+          // Move the task to today so it appears again
+          return { ...task, status: 'nao_iniciada', data: hoje, xpGanho: false };
+        }
+        return task;
+      }).filter(task => task.status !== 'cancelada');
+      
+      setStorageItem('ultimoAcessoTasks', hoje);
+    }
+
+    setTasks(tasksParaSalvar);
     setCarregando(false);
   }, []);
 

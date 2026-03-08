@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskCard } from '../components/tasks/TaskCard';
 import { TaskForm } from '../components/tasks/TaskForm';
-import { getDataStringBrasil, isDataPassada } from '../utils/dataUtils';
-import { Plus, Filter, CheckSquare } from 'lucide-react';
+import { getDataStringBrasil, isDataPassada, formatarData } from '../utils/dataUtils';
+import { Plus, Filter, CheckSquare, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 
-type FilterType = 'todas' | 'hoje' | 'atrasadas' | 'concluidas';
+type FilterType = 'todas' | 'hoje' | 'atrasadas' | 'concluidas' | 'historico';
 
 export function Tasks() {
   const { tasks, adicionarTask, mudarStatus } = useApp();
@@ -16,6 +16,13 @@ export function Tasks() {
 
   const filteredTasks = tasks.filter(task => {
     if (task.status === 'cancelada') return false;
+    
+    if (filter === 'historico') {
+      return task.concluidaDefinitivamente === true;
+    }
+    
+    // Hide definitively completed tasks from other views
+    if (task.concluidaDefinitivamente) return false;
     
     switch (filter) {
       case 'hoje':
@@ -27,6 +34,17 @@ export function Tasks() {
       default:
         return true;
     }
+  }).sort((a, b) => {
+    if (filter === 'historico') {
+      // Sort history by completion date descending
+      const dateA = a.dataConclusaoDefinitiva || a.data;
+      const dateB = b.dataConclusaoDefinitiva || b.data;
+      return dateB.localeCompare(dateA);
+    }
+    if (!a.horario && !b.horario) return 0;
+    if (!a.horario) return 1;
+    if (!b.horario) return -1;
+    return a.horario.localeCompare(b.horario);
   });
 
   return (
@@ -93,13 +111,32 @@ export function Tasks() {
         >
           Concluídas
         </button>
+        <button 
+          onClick={() => setFilter('historico')}
+          className={clsx(
+            "px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-2",
+            filter === 'historico' 
+              ? "bg-accent-purple text-white shadow-lg shadow-accent-purple/20" 
+              : "bg-bg-sec border border-border-subtle text-text-sec hover:bg-border-subtle hover:text-white"
+          )}
+        >
+          <Archive size={16} />
+          Histórico
+        </button>
       </div>
 
       {/* Task Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTasks.length > 0 ? (
           filteredTasks.map(task => (
-            <TaskCard key={task.id} task={task} onStatusChange={mudarStatus} />
+            <div key={task.id} className="relative">
+              <TaskCard task={task} onStatusChange={mudarStatus} />
+              {filter === 'historico' && task.dataConclusaoDefinitiva && (
+                <div className="absolute -top-3 -right-3 bg-bg-sec border border-border-subtle text-xs text-text-sec px-3 py-1 rounded-full shadow-lg z-10">
+                  Finalizada em {formatarData(task.dataConclusaoDefinitiva)}
+                </div>
+              )}
+            </div>
           ))
         ) : (
           <div className="col-span-full glass-card flex flex-col items-center justify-center py-16 text-center">

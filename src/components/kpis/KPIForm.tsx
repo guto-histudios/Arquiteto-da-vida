@@ -11,6 +11,7 @@ interface KPIFormProps {
 
 export function KPIForm({ isOpen, onClose, onSave }: KPIFormProps) {
   const [titulo, setTitulo] = useState('');
+  const [descricao, setDescricao] = useState('');
   const [valorAtual, setValorAtual] = useState(0);
   const [valorMeta, setValorMeta] = useState(100);
   const [unidade, setUnidade] = useState('');
@@ -22,6 +23,7 @@ export function KPIForm({ isOpen, onClose, onSave }: KPIFormProps) {
     const newKPI: KPI = {
       id: uuidv4(),
       titulo,
+      descricao,
       valorAtual,
       valorMeta,
       unidade,
@@ -30,6 +32,7 @@ export function KPIForm({ isOpen, onClose, onSave }: KPIFormProps) {
     onClose();
     // Reset form
     setTitulo('');
+    setDescricao('');
     setValorAtual(0);
     setValorMeta(100);
     setUnidade('');
@@ -54,6 +57,16 @@ export function KPIForm({ isOpen, onClose, onSave }: KPIFormProps) {
               onChange={(e) => setTitulo(e.target.value)} 
               className="input-modern"
               placeholder="Ex: Livros Lidos"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2 text-text-sec">Descrição / Como Medir (Opcional)</label>
+            <textarea 
+              value={descricao} 
+              onChange={(e) => setDescricao(e.target.value)} 
+              className="input-modern min-h-[80px] resize-y"
+              placeholder="Ex: Contar o número de livros finalizados por mês."
             />
           </div>
 

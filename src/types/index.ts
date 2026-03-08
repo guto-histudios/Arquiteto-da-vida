@@ -15,9 +15,12 @@ export interface Task {
   prazo?: string; // YYYY-MM-DD
   tipoRepeticao: TipoRepeticao;
   dataLimite?: string; // YYYY-MM-DD
+  horario?: string; // HH:mm
   diasSemana?: number[]; // [0,1,2,3,4,5,6]
   vezAtual: number;
   repeticoesMax?: number;
+  concluidaDefinitivamente?: boolean;
+  dataConclusaoDefinitiva?: string;
   kpiVinculado?: string;
   metaVinculada?: string;
   xpGanho: boolean;
@@ -62,6 +65,7 @@ export interface Meta {
 export interface KPI {
   id: string;
   titulo: string;
+  descricao?: string;
   valorAtual: number;
   valorMeta: number;
   unidade: string;
@@ -161,4 +165,29 @@ export interface BadgeInfo {
   descricao: string;
   icone: string;
   cor: string;
+}
+
+export interface Meal {
+  nome: string;
+  quantidade: string;
+  porcoes: string;
+  calorias: number;
+  proteina: number;
+  carboidratos: number;
+  gorduras: number;
+}
+
+export interface MealOption {
+  id: string;
+  cafeDaManha: Meal;
+  almoco: Meal;
+  lancheDaTarde: Meal;
+  jantar: Meal;
+  caloriasTotais: number;
+}
+
+export interface DailyMeals {
+  data: string; // YYYY-MM-DD
+  opcoesGeradas: MealOption[];
+  opcaoEscolhidaId?: string;
 }

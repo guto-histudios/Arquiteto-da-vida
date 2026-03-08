@@ -16,6 +16,8 @@ export interface WeeklySummaryData {
   totalPomodoros: number;
   reflectionLearned: string;
   reflectionImprove: string;
+  reflectionGrateful: string;
+  reflectionNextWeek: string;
   isCompleted: boolean;
 }
 
@@ -91,15 +93,24 @@ export function useResumoSemanal() {
       totalPomodoros,
       reflectionLearned: '',
       reflectionImprove: '',
+      reflectionGrateful: '',
+      reflectionNextWeek: '',
       isCompleted: false
     };
   }, [tasks, habitos, metas, gamification.totalXP, getLevelInfo, summaries]);
 
-  const saveReflection = (id: string, learned: string, improve: string) => {
+  const saveReflection = (id: string, learned: string, improve: string, grateful: string, nextWeek: string) => {
     const existing = summaries.find(s => s.id === id);
     let newSummaries;
     if (existing) {
-      newSummaries = summaries.map(s => s.id === id ? { ...s, reflectionLearned: learned, reflectionImprove: improve, isCompleted: true } : s);
+      newSummaries = summaries.map(s => s.id === id ? { 
+        ...s, 
+        reflectionLearned: learned, 
+        reflectionImprove: improve, 
+        reflectionGrateful: grateful,
+        reflectionNextWeek: nextWeek,
+        isCompleted: true 
+      } : s);
     } else {
       return;
     }

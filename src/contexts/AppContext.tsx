@@ -5,7 +5,8 @@ import { useMetas } from '../hooks/useMetas';
 import { useKPIs } from '../hooks/useKPIs';
 import { useConfiguracoes } from '../hooks/useConfiguracoes';
 import { useGamification, BADGES_INFO } from '../hooks/useGamification';
-import { Task, Habito, Meta, KPI, Configuracao, HorarioFixo, UserProfile, TaskStatus, HealthData, WorkoutPlan, GamificationState, BadgeInfo } from '../types';
+import { useHaraHachiBu } from '../hooks/useHaraHachiBu';
+import { Task, Habito, Meta, KPI, Configuracao, HorarioFixo, UserProfile, TaskStatus, HealthData, WorkoutPlan, GamificationState, BadgeInfo, DailyMeals } from '../types';
 import { getDataStringBrasil } from '../utils/dataUtils';
 import { THEMES } from '../utils/themeUtils';
 
@@ -50,6 +51,10 @@ interface AppContextData {
   workoutPlan: WorkoutPlan | null;
   setWorkoutPlan: (plan: WorkoutPlan | null) => void;
 
+  dailyMeals: DailyMeals | null;
+  saveDailyMeals: (meals: DailyMeals) => void;
+  chooseMealOption: (optionId: string) => void;
+
   // Gamification
   gamification: GamificationState;
   addXP: (amount: number) => void;
@@ -73,10 +78,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const kpisHook = useKPIs();
   const configHook = useConfiguracoes();
   const gamificationHook = useGamification();
+  const haraHachiBuHook = useHaraHachiBu();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
 
-  const carregando = tasksHook.carregando || habitosHook.carregando || metasHook.carregando || kpisHook.carregando || configHook.carregando || gamificationHook.carregando;
+  const carregando = tasksHook.carregando || habitosHook.carregando || metasHook.carregando || kpisHook.carregando || configHook.carregando || gamificationHook.carregando || haraHachiBuHook.carregando;
 
   // Apply theme
   useEffect(() => {

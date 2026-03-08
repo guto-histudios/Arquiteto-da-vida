@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResumoSemanal } from '../../hooks/useResumoSemanal';
 import { format, subWeeks, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Trophy, Star, Target, CheckCircle, Calendar, ChevronLeft, ChevronRight, Save, Award, TrendingUp } from 'lucide-react';
+import { Trophy, Star, Target, CheckCircle, Calendar, ChevronLeft, ChevronRight, Save, Award, TrendingUp, Edit2, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export function ResumoSemanal() {
   const { summaries, generateSummary, saveReflection, addSummary } = useResumoSemanal();
   const [weekOffset, setWeekOffset] = useState(0); 
+  const [isEditing, setIsEditing] = useState(false);
 
   const targetDate = useMemo(() => {
     const d = new Date();
@@ -21,28 +22,53 @@ export function ResumoSemanal() {
 
   const [learned, setLearned] = useState('');
   const [improve, setImprove] = useState('');
+  const [grateful, setGrateful] = useState('');
+  const [nextWeek, setNextWeek] = useState('');
 
   useEffect(() => {
     setLearned(summary.reflectionLearned || '');
     setImprove(summary.reflectionImprove || '');
+    setGrateful(summary.reflectionGrateful || '');
+    setNextWeek(summary.reflectionNextWeek || '');
     
     // Auto-add to history if it doesn't exist
     if (!summaries.find(s => s.id === summary.id)) {
       addSummary(summary);
     }
-  }, [summary.id, summary.reflectionLearned, summary.reflectionImprove, summaries, addSummary, summary]);
+  }, [summary.id, summary.reflectionLearned, summary.reflectionImprove, summary.reflectionGrateful, summary.reflectionNextWeek, summaries, addSummary, summary]);
 
-  const handleSave = () => {
-    saveReflection(summary.id, learned, improve);
-    alert('Reflexão salva com sucesso!');
-  };
+  // Auto-save when values change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (
+        learned !== summary.reflectionLearned ||
+        improve !== summary.reflectionImprove ||
+        grateful !== summary.reflectionGrateful ||
+        nextWeek !== summary.reflectionNextWeek
+      ) {
+        saveReflection(summary.id, learned, improve, grateful, nextWeek);
+      }
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [learned, improve, grateful, nextWeek, summary.id, saveReflection, summary]);
 
   const handlePrevWeek = () => {
-    if (weekOffset > -3) setWeekOffset(prev => prev - 1);
+    if (weekOffset > -3) {
+      setWeekOffset(prev => prev - 1);
+      setIsEditing(false);
+    }
   };
 
   const handleNextWeek = () => {
-    if (weekOffset < 0) setWeekOffset(prev => prev + 1);
+    if (weekOffset < 0) {
+      setWeekOffset(prev => prev + 1);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCreateNew = () => {
+    setWeekOffset(0);
+    setIsEditing(true);
   };
 
   const previousSummary = useMemo(() => {
@@ -65,6 +91,8 @@ export function ResumoSemanal() {
   const taskPercentage = summary.tasksTotal > 0 ? Math.round((summary.tasksCompleted / summary.tasksTotal) * 100) : 0;
   const bestDayFormatted = summary.bestDay ? format(parseISO(summary.bestDay), 'EEEE', { locale: ptBR }) : 'Nenhum';
 
+  const hasReflection = learned || improve || grateful || nextWeek;
+
   return (
     <div className="glass-card p-6 md:p-8 relative overflow-hidden mt-8">
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-accent-blue/10 to-transparent rounded-bl-full -z-10"></div>
@@ -86,6 +114,7 @@ export function ResumoSemanal() {
             onClick={handlePrevWeek}
             disabled={weekOffset <= -3}
             className="p-2 rounded-lg hover:bg-bg-card disabled:opacity-30 transition-colors"
+            title="Semana anterior"
           >
             <ChevronLeft size={20} />
           </button>
@@ -96,6 +125,7 @@ export function ResumoSemanal() {
             onClick={handleNextWeek}
             disabled={weekOffset >= 0}
             className="p-2 rounded-lg hover:bg-bg-card disabled:opacity-30 transition-colors"
+            title="Próxima semana"
           >
             <ChevronRight size={20} />
           </button>
@@ -190,40 +220,113 @@ export function ResumoSemanal() {
 
           {/* Reflection Form */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Trophy size={20} className="text-warning" />
-              Reflexão Semanal
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-sec mb-2">O que você aprendeu ou fez bem essa semana?</label>
-                <textarea
-                  value={learned}
-                  onChange={(e) => setLearned(e.target.value)}
-                  placeholder="Escreva suas vitórias e aprendizados..."
-                  className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue resize-none h-24"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-sec mb-2">O que pode melhorar para a próxima semana?</label>
-                <textarea
-                  value={improve}
-                  onChange={(e) => setImprove(e.target.value)}
-                  placeholder="Identifique obstáculos e como superá-los..."
-                  className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-accent-purple focus:ring-1 focus:ring-accent-purple resize-none h-24"
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={handleSave}
-                  className="bg-gradient-to-r from-accent-blue to-accent-purple text-white px-6 py-2 rounded-xl font-medium flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-accent-blue/20"
-                >
-                  <Save size={18} />
-                  Salvar Reflexão
-                </button>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Trophy size={20} className="text-warning" />
+                Reflexão Semanal
+              </h3>
+              
+              <div className="flex items-center gap-2">
+                {(!isEditing && hasReflection) && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="text-sm flex items-center gap-1 text-accent-blue hover:text-white transition-colors bg-accent-blue/10 px-3 py-1.5 rounded-lg"
+                  >
+                    <Edit2 size={14} />
+                    Editar
+                  </button>
+                )}
+                {weekOffset !== 0 && (
+                  <button
+                    onClick={handleCreateNew}
+                    className="text-sm flex items-center gap-1 text-success hover:text-white transition-colors bg-success/10 px-3 py-1.5 rounded-lg"
+                  >
+                    <Plus size={14} />
+                    Nova Reflexão
+                  </button>
+                )}
               </div>
             </div>
+            
+            {isEditing || !hasReflection ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-sec mb-2">O que você aprendeu essa semana?</label>
+                  <textarea
+                    value={learned}
+                    onChange={(e) => setLearned(e.target.value)}
+                    placeholder="Escreva suas vitórias e aprendizados..."
+                    className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue resize-none h-24"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-sec mb-2">O que pode melhorar?</label>
+                  <textarea
+                    value={improve}
+                    onChange={(e) => setImprove(e.target.value)}
+                    placeholder="Identifique obstáculos e como superá-los..."
+                    className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-error focus:ring-1 focus:ring-error resize-none h-24"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-sec mb-2">Pelo que você está grato?</label>
+                  <textarea
+                    value={grateful}
+                    onChange={(e) => setGrateful(e.target.value)}
+                    placeholder="Pequenas ou grandes coisas..."
+                    className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-success focus:ring-1 focus:ring-success resize-none h-24"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-sec mb-2">Próxima semana eu quero...</label>
+                  <textarea
+                    value={nextWeek}
+                    onChange={(e) => setNextWeek(e.target.value)}
+                    placeholder="Defina seu foco principal..."
+                    className="w-full bg-bg-sec border border-border-subtle rounded-xl px-4 py-3 text-text-main placeholder-text-sec focus:outline-none focus:border-accent-purple focus:ring-1 focus:ring-accent-purple resize-none h-24"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2 flex justify-end mt-2">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="bg-bg-sec border border-border-subtle text-white px-6 py-2 rounded-xl font-medium hover:bg-border-subtle transition-all"
+                  >
+                    Concluir Edição
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {learned && (
+                  <div className="bg-bg-sec/50 p-4 rounded-xl border border-border-subtle">
+                    <h4 className="text-xs font-bold text-accent-blue uppercase tracking-wider mb-2">Aprendizados</h4>
+                    <p className="text-sm text-text-main whitespace-pre-wrap">{learned}</p>
+                  </div>
+                )}
+                {improve && (
+                  <div className="bg-bg-sec/50 p-4 rounded-xl border border-border-subtle">
+                    <h4 className="text-xs font-bold text-error uppercase tracking-wider mb-2">A Melhorar</h4>
+                    <p className="text-sm text-text-main whitespace-pre-wrap">{improve}</p>
+                  </div>
+                )}
+                {grateful && (
+                  <div className="bg-bg-sec/50 p-4 rounded-xl border border-border-subtle">
+                    <h4 className="text-xs font-bold text-success uppercase tracking-wider mb-2">Gratidão</h4>
+                    <p className="text-sm text-text-main whitespace-pre-wrap">{grateful}</p>
+                  </div>
+                )}
+                {nextWeek && (
+                  <div className="bg-bg-sec/50 p-4 rounded-xl border border-border-subtle">
+                    <h4 className="text-xs font-bold text-accent-purple uppercase tracking-wider mb-2">Próxima Semana</h4>
+                    <p className="text-sm text-text-main whitespace-pre-wrap">{nextWeek}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <p className="text-xs text-text-sec text-right mt-2">
+              Salvo automaticamente ao digitar
+            </p>
           </div>
 
         </div>

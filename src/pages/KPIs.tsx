@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { KPICard } from '../components/kpis/KPICard';
 import { KPIForm } from '../components/kpis/KPIForm';
-import { Plus, Activity } from 'lucide-react';
+import { KPIGeneratorModal } from '../components/kpis/KPIGeneratorModal';
+import { Plus, Activity, Sparkles } from 'lucide-react';
 
 export function KPIs() {
   const { kpis, adicionarKPI, atualizarKPI } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+
+  const handleSaveGeneratedKPIs = (newKpis: any[]) => {
+    newKpis.forEach(kpi => adicionarKPI(kpi));
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -17,13 +23,22 @@ export function KPIs() {
           </div>
           <h1 className="text-4xl font-bold tracking-tight">Meus KPIs</h1>
         </div>
-        <button 
-          onClick={() => setIsFormOpen(true)}
-          className="bg-gradient-to-r from-accent-purple to-pink-600 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-purple/25 active:scale-95 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Novo KPI
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setIsGeneratorOpen(true)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Sparkles size={20} className="text-accent-purple" />
+            Gerar com IA
+          </button>
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            className="bg-gradient-to-r from-accent-purple to-pink-600 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-purple/25 active:scale-95 flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Criar Manualmente
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -37,7 +52,7 @@ export function KPIs() {
               <Activity size={40} className="text-text-sec" />
             </div>
             <h3 className="text-xl font-medium mb-2">Nenhum KPI definido</h3>
-            <p className="text-text-sec max-w-md">Os Key Performance Indicators ajudam a medir seu progresso. Crie o primeiro!</p>
+            <p className="text-text-sec max-w-md">Os Key Performance Indicators ajudam a medir seu progresso. Crie o primeiro ou gere com IA!</p>
           </div>
         )}
       </div>
@@ -47,6 +62,14 @@ export function KPIs() {
           isOpen={isFormOpen} 
           onClose={() => setIsFormOpen(false)} 
           onSave={adicionarKPI} 
+        />
+      )}
+
+      {isGeneratorOpen && (
+        <KPIGeneratorModal
+          isOpen={isGeneratorOpen}
+          onClose={() => setIsGeneratorOpen(false)}
+          onSave={handleSaveGeneratedKPIs}
         />
       )}
     </div>

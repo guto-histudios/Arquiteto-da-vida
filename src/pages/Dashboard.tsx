@@ -17,7 +17,14 @@ export function Dashboard() {
   const [isImprevistoOpen, setIsImprevistoOpen] = useState(false);
   const hoje = getDataStringBrasil();
 
-  const tasksDoDia = tasks.filter(t => t.data === hoje && t.status !== 'cancelada');
+  const tasksDoDia = tasks
+    .filter(t => t.data === hoje && t.status !== 'cancelada' && !t.concluidaDefinitivamente)
+    .sort((a, b) => {
+      if (!a.horario && !b.horario) return 0;
+      if (!a.horario) return 1;
+      if (!b.horario) return -1;
+      return a.horario.localeCompare(b.horario);
+    });
   const habitosDoDia = habitos.filter(h => h.diasSemana.includes(new Date().getDay()));
   
   const tasksConcluidas = tasksDoDia.filter(t => t.status === 'concluida').length;

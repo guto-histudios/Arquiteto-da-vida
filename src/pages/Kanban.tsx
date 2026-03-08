@@ -2,16 +2,24 @@ import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus } from '../types';
 import { TaskCard } from '../components/tasks/TaskCard';
-import { KanbanSquare, Trophy, AlertCircle } from 'lucide-react';
+import { KanbanSquare, Trophy, AlertCircle, CheckSquare, RefreshCw, CheckCircle } from 'lucide-react';
 import { getDataStringBrasil } from '../utils/dataUtils';
 import { clsx } from 'clsx';
 
 export function Kanban() {
-  const { tasks, mudarStatus, config } = useApp();
+  const { tasks, mudarStatus, atualizarTask, config } = useApp();
   const hoje = getDataStringBrasil();
+  const [taskToComplete, setTaskToComplete] = useState<string | null>(null);
   
   // Only show tasks for today or overdue tasks
-  const kanbanTasks = tasks.filter(t => t.data === hoje || (t.data < hoje && t.status !== 'concluida' && t.status !== 'cancelada'));
+  const kanbanTasks = tasks
+    .filter(t => !t.concluidaDefinitivamente && (t.data === hoje || (t.data < hoje && t.status !== 'concluida' && t.status !== 'cancelada')))
+    .sort((a, b) => {
+      if (!a.horario && !b.horario) return 0;
+      if (!a.horario) return 1;
+      if (!b.horario) return -1;
+      return a.horario.localeCompare(b.horario);
+    });
 
   const columns: { id: TaskStatus; title: string; color: string }[] = [
     { id: 'nao_iniciada', title: 'A Fazer', color: 'border-text-sec' },
@@ -42,7 +50,34 @@ export function Kanban() {
       }
     }
 
+    const task = tasks.find(t => t.id === taskId);
+    if (status === 'concluida' && task?.status !== 'concluida') {
+      setTaskToComplete(taskId);
+      return;
+    }
+
     mudarStatus(taskId, status);
+  };
+
+  const handleConfirmCompletion = (continua: boolean) => {
+    if (!taskToComplete) return;
+    
+    const task = tasks.find(t => t.id === taskToComplete);
+    if (!task) return;
+
+    if (!continua) {
+      atualizarTask(task.id, { 
+        concluidaDefinitivamente: true,
+        dataConclusaoDefinitiva: getDataStringBrasil()
+      });
+    } else {
+      atualizarTask(task.id, {
+        vezAtual: (task.vezAtual || 1) + 1
+      });
+    }
+    
+    mudarStatus(task.id, 'concluida');
+    setTaskToComplete(null);
   };
 
   // Calculate total XP
@@ -128,6 +163,43 @@ export function Kanban() {
           );
         })}
       </div>
+      
+      {taskToComplete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass-card w-full max-w-md p-8 text-center animate-slide-up">
+            <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-success/30">
+              <CheckSquare size={40} className="text-success" />
+            </div>
+            
+            <h2 className="text-2xl font-bold mb-3">Tarefa Concluída!</h2>
+            <p className="text-text-sec mb-8 text-lg">A tarefa foi finalizada ou vai continuar?</p>
+            
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => handleConfirmCompletion(true)}
+                className="bg-bg-sec border border-border-subtle hover:border-accent-blue/50 hover:bg-accent-blue/10 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 group"
+              >
+                <RefreshCw size={24} className="text-accent-blue group-hover:rotate-180 transition-transform duration-500" />
+                <div className="text-left">
+                  <div className="font-bold text-lg">Sim, continua</div>
+                  <div className="text-sm text-text-sec">Volta amanhã como não iniciada</div>
+                </div>
+              </button>
+              
+              <button 
+                onClick={() => handleConfirmCompletion(false)}
+                className="bg-success/20 border border-success/50 hover:bg-success hover:text-white text-success px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300"
+              >
+                <CheckCircle size={24} />
+                <div className="text-left">
+                  <div className="font-bold text-lg">Não, termina aqui</div>
+                  <div className="text-sm opacity-80">Vai para o histórico definitivo</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
