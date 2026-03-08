@@ -1,4 +1,4 @@
-export type TaskStatus = 'nao_iniciada' | 'em_andamento' | 'concluida' | 'cancelada' | 'nao_feita';
+export type TaskStatus = 'nao_iniciada' | 'em_andamento' | 'concluida' | 'cancelada' | 'nao_feita' | 'adiada' | 'atrasada';
 export type TaskCategoria = 'trabalho' | 'pessoal' | 'saude' | 'estudos';
 export type TaskPrioridade = 'alta' | 'media' | 'baixa';
 export type TipoRepeticao = 'uma_vez' | 'diario' | 'semanal' | 'personalizado';
@@ -25,9 +25,11 @@ export interface Task {
   metaVinculada?: string;
   xpGanho: boolean;
   horarioFixo?: boolean;
+  horarioFixoId?: string;
   deadline?: string; // YYYY-MM-DD
   pomodorosFeitos: number;
   blocosQuebrados?: string[];
+  vezesAdiada?: number;
 }
 
 export interface ConclusaoHabito {
@@ -42,6 +44,8 @@ export interface Habito {
   horario?: string; // HH:mm
   categoria: string;
   conclusoes: ConclusaoHabito[];
+  streak: number;
+  ultimoCumprimento?: string; // YYYY-MM-DD
 }
 
 export type MetaPeriodo = 'semanal' | 'mensal' | 'trimestral';
@@ -53,9 +57,13 @@ export interface Meta {
   descricao?: string;
   periodo: MetaPeriodo;
   dataInicio: string; // YYYY-MM-DD
-  dataFim: string; // YYYY-MM-DD
+  dataFim: string; // YYYY-MM-DD (Target date set by user)
+  deadline?: string; // YYYY-MM-DD (Hard deadline: creation + 7/30/90 days)
+  dataConclusao?: string; // YYYY-MM-DD
   progresso: number; // 0-100
   status: MetaStatus;
+  arquivada?: boolean;
+  resultado?: 'sucesso' | 'falha';
   kpiVinculado?: string;
   metaProgresso?: number;
   tasksVinculadas: string[];
@@ -70,6 +78,11 @@ export interface KPI {
   valorAtual: number;
   valorMeta: number;
   unidade: string;
+  tipoCalculo: 'manual' | 'automatico';
+  tipoAutomatico?: 'tasks_concluidas' | 'habitos_concluidos' | 'pomodoro_tempo' | 'xp_ganho' | 'streak_atual';
+  frequencia: 'diario' | 'semanal' | 'mensal';
+  dataInicio: string;
+  historico: { data: string; valor: number }[];
 }
 
 export type TipoHorarioFixo = 'cafe_almoco' | 'almoco' | 'lanche_tarde' | 'jantar' | 'sono_inicio' | 'sono_fim' | 'outro';
@@ -155,9 +168,41 @@ export interface WorkoutPlan {
 
 export interface GamificationState {
   totalXP: number;
+  xpDiario: number;
   badges: string[];
   streakDias: number;
   ultimoAcesso: string;
+  moedas: number;
+  historicoMoedas: TransacaoMoeda[];
+  moedasAcumuladasAno: number;
+  recompensasCompradas: RecompensaComprada[];
+}
+
+export interface TransacaoMoeda {
+  id: string;
+  data: string;
+  quantidade: number;
+  descricao: string;
+  tipo: 'ganho' | 'gasto';
+}
+
+export type TipoRecompensa = 'diaria' | 'semanal' | 'anual';
+
+export interface Recompensa {
+  id: string;
+  titulo: string;
+  custo: number;
+  tipo: TipoRecompensa;
+  descricao: string;
+  icone: string;
+}
+
+export interface RecompensaComprada {
+  id: string;
+  recompensaId: string;
+  dataCompra: string;
+  usada: boolean;
+  dataUso?: string;
 }
 
 export interface BadgeInfo {
@@ -191,4 +236,46 @@ export interface DailyMeals {
   data: string; // YYYY-MM-DD
   opcoesGeradas: MealOption[];
   opcaoEscolhidaId?: string;
+}
+
+export interface NutritionProfile {
+  peso: number;
+  altura: number;
+  idade: number;
+  genero: 'masculino' | 'feminino';
+  nivelAtividade: 'sedentario' | 'leve' | 'moderado' | 'ativo' | 'muito_ativo';
+  objetivo: 'perder_peso' | 'manter' | 'ganhar_musculo';
+  restricoesAlimentares: string[];
+  preferencias: string;
+  naoGosta: string;
+  refeicoesPorDia: 3 | 4 | 5 | 6;
+  horariosRefeicoes: string;
+  metaCaloricaPersonalizada?: number;
+}
+
+export interface MealItem {
+  nome: string; // "Café da Manhã", "Almoço", etc.
+  horario: string;
+  prato: string;
+  ingredientes: string[];
+  quantidadeGramas: number;
+  calorias: number;
+  macros: {
+    proteina: number;
+    carboidratos: number;
+    gorduras: number;
+  };
+}
+
+export interface NutritionPlan {
+  tmb: number;
+  get: number;
+  caloriasMeta: number;
+  macrosMeta: {
+    proteina: number;
+    carboidratos: number;
+    gorduras: number;
+  };
+  refeicoes: MealItem[];
+  dicasHaraHachiBu: string[];
 }

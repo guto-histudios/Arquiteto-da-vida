@@ -57,13 +57,17 @@ export function useConfiguracoes() {
     setHorariosFixos(prev => [...prev, horario]);
   };
 
+  const atualizarHorarioFixo = (id: string, updates: Partial<HorarioFixo>) => {
+    setHorariosFixos(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
+  };
+
   const removerHorarioFixo = (id: string) => {
     setHorariosFixos(prev => prev.filter(h => h.id !== id));
   };
 
   return { 
     config, atualizarConfig, 
-    horariosFixos, adicionarHorarioFixo, removerHorarioFixo, 
+    horariosFixos, adicionarHorarioFixo, atualizarHorarioFixo, removerHorarioFixo, 
     userProfile, setUserProfile, 
     healthData, setHealthData,
     workoutPlan, setWorkoutPlan,

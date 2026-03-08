@@ -13,7 +13,7 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps) {
-  const { horariosFixos, kpis, metas } = useApp();
+  const { horariosFixos, kpis, metas, adicionarHorarioFixo } = useApp();
   const [titulo, setTitulo] = useState(initialTask?.titulo || '');
   const [descricao, setDescricao] = useState(initialTask?.descricao || '');
   const [duracao, setDuracao] = useState(initialTask?.duracao || 30);
@@ -24,6 +24,7 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
   const [tipoRepeticao, setTipoRepeticao] = useState<TipoRepeticao>(initialTask?.tipoRepeticao || 'uma_vez');
   const [diasSemana, setDiasSemana] = useState<number[]>(initialTask?.diasSemana || []);
   const [horarioFixo, setHorarioFixo] = useState(initialTask?.horarioFixo || false);
+  const [horarioFixoId, setHorarioFixoId] = useState(initialTask?.horarioFixoId || '');
   const [temDeadline, setTemDeadline] = useState(!!initialTask?.deadline);
   const [deadline, setDeadline] = useState(initialTask?.deadline || '');
   const [kpiVinculado, setKpiVinculado] = useState(initialTask?.kpiVinculado || '');
@@ -41,12 +42,31 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
       setTipoRepeticao(initialTask?.tipoRepeticao || 'uma_vez');
       setDiasSemana(initialTask?.diasSemana || []);
       setHorarioFixo(initialTask?.horarioFixo || false);
+      setHorarioFixoId(initialTask?.horarioFixoId || '');
       setTemDeadline(!!initialTask?.deadline);
       setDeadline(initialTask?.deadline || '');
       setKpiVinculado(initialTask?.kpiVinculado || '');
       setMetaVinculada(initialTask?.metaVinculada || '');
     }
   }, [isOpen, initialTask]);
+
+  const handleHorarioFixoChange = (id: string) => {
+    setHorarioFixoId(id);
+    if (id) {
+      const fixo = horariosFixos.find(h => h.id === id);
+      if (fixo) {
+        setHorario(fixo.horaInicio);
+        setTitulo(fixo.descricao);
+        if (fixo.horaFim) {
+          const [h1, m1] = fixo.horaInicio.split(':').map(Number);
+          const [h2, m2] = fixo.horaFim.split(':').map(Number);
+          let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (diff < 0) diff += 24 * 60;
+          setDuracao(diff);
+        }
+      }
+    }
+  };
 
   const horarioFim = useMemo(() => {
     if (!horario || !duracao) return null;
@@ -82,6 +102,21 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let finalHorarioFixoId = horarioFixoId;
+    
+    if (horarioFixo && !horarioFixoId && horario && titulo) {
+      const newId = uuidv4();
+      adicionarHorarioFixo({
+        id: newId,
+        tipo: 'outro',
+        horaInicio: horario,
+        horaFim: horarioFim || undefined,
+        descricao: titulo
+      });
+      finalHorarioFixoId = newId;
+    }
+
     const newTask: Task = {
       ...(initialTask || {}),
       id: initialTask?.id || uuidv4(),
@@ -90,6 +125,7 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
       duracao,
       horario: horarioFixo && horario ? horario : undefined,
       horarioFixo,
+      horarioFixoId: horarioFixo && finalHorarioFixoId ? finalHorarioFixoId : undefined,
       deadline: temDeadline && deadline ? deadline : undefined,
       categoria,
       prioridade,
@@ -111,6 +147,7 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
     setDuracao(30);
     setHorario('');
     setHorarioFixo(false);
+    setHorarioFixoId('');
     setTemDeadline(false);
     setDeadline('');
     setDiasSemana([]);
@@ -188,22 +225,45 @@ export function TaskForm({ isOpen, onClose, onSave, initialTask }: TaskFormProps
             </div>
 
             {horarioFixo && (
-              <div className="grid grid-cols-2 gap-5 pt-2">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Início</label>
-                  <input 
-                    type="time"
-                    required={horarioFixo}
-                    value={horario} 
-                    onChange={(e) => setHorario(e.target.value)} 
-                    className="input-modern"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Fim</label>
-                  <div className="input-modern bg-bg-main flex items-center text-text-sec">
-                    <Clock size={16} className="mr-2" />
-                    {horarioFim || '--:--'}
+              <div className="space-y-4 pt-2">
+                {horariosFixos.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-text-sec">Vincular a Horário Existente</label>
+                    <select
+                      value={horarioFixoId}
+                      onChange={(e) => handleHorarioFixoChange(e.target.value)}
+                      className="input-modern appearance-none"
+                    >
+                      <option value="">-- Criar novo horário personalizado --</option>
+                      {horariosFixos.map(hf => (
+                        <option key={hf.id} value={hf.id}>
+                          {hf.descricao} ({hf.horaInicio}{hf.horaFim ? ` - ${hf.horaFim}` : ''})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Início</label>
+                    <input 
+                      type="time"
+                      required={horarioFixo}
+                      value={horario} 
+                      onChange={(e) => {
+                        setHorario(e.target.value);
+                        setHorarioFixoId(''); // Desvincular se mudar manualmente
+                      }} 
+                      className="input-modern"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-text-sec">Horário de Fim</label>
+                    <div className="input-modern bg-bg-main flex items-center text-text-sec">
+                      <Clock size={16} className="mr-2" />
+                      {horarioFim || '--:--'}
+                    </div>
                   </div>
                 </div>
               </div>

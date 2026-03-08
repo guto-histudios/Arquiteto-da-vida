@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Meta } from '../../types';
-import { Target, CheckCircle, Calendar, Link as LinkIcon } from 'lucide-react';
+import { Target, CheckCircle, Calendar, Link as LinkIcon, AlertTriangle, CheckCheck, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
-import { formatarData } from '../../utils/dataUtils';
+import { formatarData, isDataFutura, isDataPassada } from '../../utils/dataUtils';
 import { useApp } from '../../contexts/AppContext';
 import { MetaDetailsModal } from './MetaDetailsModal';
+import { differenceInDays, parseISO } from 'date-fns';
 
 interface MetaCardProps {
   meta: Meta;
@@ -13,7 +14,7 @@ interface MetaCardProps {
   onEdit?: (meta: Meta) => void;
 }
 
-export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
+export const MetaCard: React.FC<MetaCardProps> = ({ meta, onUpdate, onDelete, onEdit }) => {
   const { tasks, kpis } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,15 +55,38 @@ export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
   }
 
   const isConcluida = progressoTotal >= 100 || meta.status === 'concluida';
+  const isArquivada = meta.arquivada;
+  const isFalha = isArquivada && meta.resultado === 'falha';
 
-  // Update status if progress reached 100
-  React.useEffect(() => {
-    if (progressoTotal >= 100 && meta.status !== 'concluida') {
-      onUpdate(meta.id, { status: 'concluida', progresso: 100 });
-    } else if (progressoTotal < 100 && meta.progresso !== progressoTotal) {
-      onUpdate(meta.id, { progresso: progressoTotal, status: progressoTotal > 0 ? 'em_andamento' : 'nao_iniciada' });
+  // Calculate days remaining
+  let diasRestantes = 0;
+  let prazoTexto = '';
+  let prazoCor = 'text-text-sec';
+
+  if (meta.deadline && !isArquivada) {
+    diasRestantes = differenceInDays(parseISO(meta.deadline), new Date());
+    if (diasRestantes < 0) {
+      prazoTexto = 'Expirada';
+      prazoCor = 'text-red-500';
+    } else if (diasRestantes === 0) {
+      prazoTexto = 'Vence hoje';
+      prazoCor = 'text-orange-500';
+    } else {
+      prazoTexto = `${diasRestantes} dias restantes`;
+      if (diasRestantes <= 3) prazoCor = 'text-orange-500';
     }
-  }, [progressoTotal, meta.id, meta.status, meta.progresso, onUpdate]);
+  }
+
+  // Update status if progress reached 100 (only if not archived)
+  React.useEffect(() => {
+    if (!meta.arquivada) {
+      if (progressoTotal >= 100 && meta.status !== 'concluida') {
+        onUpdate(meta.id, { status: 'concluida', progresso: 100 });
+      } else if (progressoTotal < 100 && meta.progresso !== progressoTotal) {
+        onUpdate(meta.id, { progresso: progressoTotal, status: progressoTotal > 0 ? 'em_andamento' : 'nao_iniciada' });
+      }
+    }
+  }, [progressoTotal, meta.id, meta.status, meta.progresso, onUpdate, meta.arquivada]);
 
   return (
     <>
@@ -70,7 +94,8 @@ export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
         onClick={() => setIsModalOpen(true)}
         className={clsx(
           "glass-card p-6 border-l-4 relative group cursor-pointer hover:bg-bg-sec/40 transition-colors",
-          isConcluida ? "border-l-success" : "border-l-accent-blue"
+          isConcluida ? "border-l-success" : isFalha ? "border-l-red-500" : "border-l-accent-blue",
+          isArquivada && "opacity-75 grayscale-[0.3]"
         )}
       >
         <div className="flex justify-between items-start mb-5">
@@ -114,7 +139,11 @@ export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
           
           {isConcluida ? (
             <div className="p-2 bg-success/10 rounded-xl">
-              <CheckCircle className="text-success" size={24} />
+              {isArquivada ? <CheckCheck className="text-success" size={24} /> : <CheckCircle className="text-success" size={24} />}
+            </div>
+          ) : isFalha ? (
+            <div className="p-2 bg-red-500/10 rounded-xl">
+              <AlertTriangle className="text-red-500" size={24} />
             </div>
           ) : (
             <div className="p-2 bg-accent-blue/10 rounded-xl">
@@ -134,27 +163,44 @@ export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
             <div 
               className={clsx(
                 "h-full rounded-full transition-all duration-1000 ease-out relative",
-                isConcluida ? "bg-success" : "bg-gradient-to-r from-accent-blue to-accent-purple"
+                isConcluida ? "bg-success" : isFalha ? "bg-red-500" : "bg-gradient-to-r from-accent-blue to-accent-purple"
               )}
               style={{ width: `${progressoTotal}%` }}
             >
-              {!isConcluida && <div className="absolute inset-0 bg-white/20 animate-pulse"></div>}
+              {!isConcluida && !isFalha && <div className="absolute inset-0 bg-white/20 animate-pulse"></div>}
             </div>
           </div>
           
-          <div className="mt-2">
-            {linkedTasks.length > 0 && (
+          <div className="mt-2 flex justify-between items-center">
+            {linkedTasks.length > 0 ? (
               <p className="text-xs text-text-sec flex items-center gap-1">
                 <CheckCircle size={10} className={tarefasConcluidas === linkedTasks.length ? "text-success" : ""} />
                 {tarefasConcluidas} de {linkedTasks.length} tarefas concluídas
+              </p>
+            ) : <span></span>}
+            
+            {!isArquivada && meta.deadline && (
+              <p className={clsx("text-xs font-medium flex items-center gap-1", prazoCor)}>
+                <Clock size={10} />
+                {prazoTexto}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-text-sec font-medium bg-bg-sec/50 p-2 rounded-lg border border-border-subtle/50 w-fit">
-          <Calendar size={14} className="text-accent-blue" />
-          <span>{formatarData(meta.dataInicio)} - {formatarData(meta.dataFim)}</span>
+        <div className="flex items-center justify-between text-xs text-text-sec font-medium bg-bg-sec/50 p-2 rounded-lg border border-border-subtle/50">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-accent-blue" />
+            <span>{formatarData(meta.dataInicio)}</span>
+          </div>
+          
+          {isArquivada ? (
+            <span className={isConcluida ? "text-success" : "text-red-500"}>
+              {isConcluida ? `Concluída em ${meta.dataConclusao ? formatarData(meta.dataConclusao) : '-'}` : 'Não concluída'}
+            </span>
+          ) : (
+            <span>Até {meta.deadline ? formatarData(meta.deadline) : formatarData(meta.dataFim)}</span>
+          )}
         </div>
       </div>
 
@@ -163,8 +209,10 @@ export function MetaCard({ meta, onUpdate, onDelete, onEdit }: MetaCardProps) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onEdit={() => {
-          setIsModalOpen(false);
-          if (onEdit) onEdit(meta);
+          if (!isArquivada) {
+            setIsModalOpen(false);
+            if (onEdit) onEdit(meta);
+          }
         }}
         onDelete={() => {
           setIsModalOpen(false);

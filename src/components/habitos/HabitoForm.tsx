@@ -26,6 +26,7 @@ export function HabitoForm({ isOpen, onClose, onSave }: HabitoFormProps) {
       horario,
       categoria,
       conclusoes: [],
+      streak: 0,
     };
     onSave(newHabito);
     onClose();

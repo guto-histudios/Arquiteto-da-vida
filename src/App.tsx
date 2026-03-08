@@ -13,6 +13,7 @@ import { Kanban } from './pages/Kanban';
 import { Darebee } from './pages/Darebee';
 import { HaraHachiBu } from './pages/HaraHachiBu';
 import { Perfil } from './pages/Perfil';
+import { Loja } from './pages/Loja';
 import { Onboarding } from './components/Onboarding';
 
 function AppContent() {
@@ -53,6 +54,7 @@ function AppContent() {
           <Route path="/darebee" element={<Darebee />} />
           <Route path="/harahachibu" element={<HaraHachiBu />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/loja" element={<Loja />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -18,12 +18,22 @@ export function useTasks() {
       tasksParaSalvar = salvos.map(task => {
         if (task.concluidaDefinitivamente) return task;
         
+        // Reset completed/skipped tasks to 'nao_iniciada' for today if they are recurring
+        // (This logic seems to be for recurring tasks, but the original code just checked status)
+        // The original code: if (task.status === 'concluida' || task.status === 'nao_feita') -> set to 'nao_iniciada' and data = hoje.
+        // This seems to be a simplified recurrence or carry-over logic. 
+        // I should preserve it but also add the 'adiada' check.
+        
+        if (task.status === 'adiada' && task.data <= hoje) {
+           return { ...task, status: 'nao_iniciada' };
+        }
+
         if (task.status === 'concluida' || task.status === 'nao_feita') {
           // Move the task to today so it appears again
-          return { ...task, status: 'nao_iniciada', data: hoje, xpGanho: false };
+          return { ...task, status: 'nao_iniciada' as TaskStatus, data: hoje, xpGanho: false };
         }
         return task;
-      }).filter(task => task.status !== 'cancelada');
+      }).filter((task): task is Task => task.status !== 'cancelada');
       
       setStorageItem('ultimoAcessoTasks', hoje);
     }
@@ -50,6 +60,25 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.id !== id));
   };
 
+  const adiarTask = (id: string, novaData: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+
+      const vezesAdiada = (t.vezesAdiada || 0) + 1;
+      
+      if (vezesAdiada > 3) {
+        return { ...t, status: 'atrasada', vezesAdiada, data: novaData };
+      }
+
+      return { 
+        ...t, 
+        status: 'adiada', 
+        data: novaData, 
+        vezesAdiada 
+      };
+    }));
+  };
+
   const mudarStatus = (id: string, novoStatus: TaskStatus, onConcluir?: (task: Task) => void) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
@@ -72,5 +101,5 @@ export function useTasks() {
     }
   };
 
-  return { tasks, setTasks, carregando, adicionarTask, atualizarTask, removerTask, mudarStatus };
+  return { tasks, setTasks, carregando, adicionarTask, atualizarTask, removerTask, mudarStatus, adiarTask };
 }

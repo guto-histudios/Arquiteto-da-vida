@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDataStringBrasil } from "../utils/dataUtils";
 import { addDays, endOfWeek, endOfMonth, endOfQuarter, format } from "date-fns";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function generateDeepeningQuestions(userProfile: any) {
   const prompt = `
@@ -174,7 +174,8 @@ export async function generateKPIs(userProfile: any, habitos: any[], metas: Meta
         "titulo": "string (ex: Horas de estudo por semana)",
         "valorMeta": number (ex: 10),
         "unidade": "string (ex: horas, dias, %, kg, páginas)",
-        "descricao": "string (Sugestão de como medir e por que é importante)"
+        "descricao": "string (Sugestão de como medir e por que é importante)",
+        "frequencia": "diario" | "semanal" | "mensal"
       }
     ]
   `;
@@ -192,7 +193,11 @@ export async function generateKPIs(userProfile: any, habitos: any[], metas: Meta
     return kpis.map((k: any) => ({
       ...k,
       id: uuidv4(),
-      valorAtual: 0
+      valorAtual: 0,
+      tipoCalculo: 'manual',
+      frequencia: k.frequencia || 'semanal',
+      dataInicio: getDataStringBrasil(),
+      historico: []
     }));
   } catch (error) {
     console.error("Erro ao gerar KPIs:", error);

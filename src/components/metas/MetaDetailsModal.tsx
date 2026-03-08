@@ -1,6 +1,6 @@
 import React from 'react';
 import { Meta } from '../../types';
-import { X, Target, CheckCircle, Calendar, Link as LinkIcon, Trash2, Edit2 } from 'lucide-react';
+import { X, Target, CheckCircle, Calendar, Link as LinkIcon, Trash2, Edit2, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 import { formatarData } from '../../utils/dataUtils';
 import { useApp } from '../../contexts/AppContext';
@@ -19,6 +19,7 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
   if (!isOpen) return null;
 
   const isConcluida = meta.status === 'concluida';
+  const isArquivada = meta.arquivada;
 
   const linkedTasks = meta.tasksVinculadas?.map(id => tasks.find(t => t.id === id)).filter(Boolean) || [];
   const linkedKpi = meta.kpiVinculado ? kpis.find(k => k.id === meta.kpiVinculado) : null;
@@ -79,6 +80,12 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
                 )}>
                   {meta.status.replace('_', ' ')}
                 </span>
+                {isArquivada && (
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-bg-sec border border-border-subtle text-text-sec flex items-center gap-1">
+                    <Archive size={10} />
+                    Arquivada
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -107,6 +114,11 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
               <Calendar size={16} className="text-accent-blue" />
               <span>{formatarData(meta.dataInicio)} até {formatarData(meta.dataFim)}</span>
             </div>
+            {meta.deadline && (
+              <p className="text-xs text-text-sec mt-2">
+                Deadline: {formatarData(meta.deadline)}
+              </p>
+            )}
           </div>
 
           <div>
@@ -187,13 +199,15 @@ export function MetaDetailsModal({ meta, isOpen, onClose, onEdit, onDelete }: Me
             <Trash2 size={16} />
             Excluir
           </button>
-          <button
-            onClick={onEdit}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-bg-main border border-border-subtle text-white hover:bg-bg-sec transition-colors flex items-center gap-2"
-          >
-            <Edit2 size={16} />
-            Editar
-          </button>
+          {!isArquivada && (
+            <button
+              onClick={onEdit}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-bg-main border border-border-subtle text-white hover:bg-bg-sec transition-colors flex items-center gap-2"
+            >
+              <Edit2 size={16} />
+              Editar
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { ResumoSemanal } from '../components/dashboard/ResumoSemanal';
 import { ProductivityComparison } from '../components/dashboard/ProductivityComparison';
 import { getDataStringBrasil, formatarData, deveMostrarTask } from '../utils/dataUtils';
 import { AlertTriangle, CheckCircle, Calendar, Target, Activity, Trophy, Star, Flame, Zap } from 'lucide-react';
+import { BadgeInfo } from '../types';
 
 export function Dashboard() {
   const { tasks, habitos, kpis, mudarStatus, toggleConclusaoHabito, atualizarKPI, calcularProgressoHabitos, config, userProfile, gamification, getLevelInfo, badgesInfo } = useApp();
@@ -144,7 +145,7 @@ export function Dashboard() {
               <span className="text-sm text-text-sec font-medium">{gamification.badges.length} desbloqueadas</span>
             </div>
             <div className="flex flex-wrap gap-3">
-              {Object.values(badgesInfo).map(badge => {
+              {Object.values(badgesInfo).map((badge: BadgeInfo) => {
                 const isUnlocked = gamification.badges.includes(badge.id);
                 return (
                   <div 

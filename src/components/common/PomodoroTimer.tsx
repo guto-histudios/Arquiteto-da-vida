@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
 export function PomodoroTimer() {
-  const { config, activeTaskId, setActiveTaskId, tasks, atualizarTask, addXP } = useApp();
+  const { config, activeTaskId, setActiveTaskId, tasks, atualizarTask, addXP, addCoins } = useApp();
   
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeLeft, setTimeLeft] = useState(config.duracaoPomodoro * 60);
@@ -66,6 +66,8 @@ export function PomodoroTimer() {
       
       // Add XP for completing a Pomodoro
       addXP(3);
+      // Add Coins
+      addCoins(1, 'Pomodoro completado');
       
       // Update task if active
       if (activeTaskId && activeTask) {

@@ -142,10 +142,22 @@ export function KPIGeneratorModal({ isOpen, onClose, onSave }: KPIGeneratorModal
                                   onChange={e => handleUpdateKPI(kpi.id, 'unidade', e.target.value)}
                                   className="input-modern w-full py-1.5 px-3 text-sm"
                                 />
+                              <div>
+                                <label className="block text-xs text-text-sec mb-1">Frequência</label>
+                                <select 
+                                  value={kpi.frequencia || 'semanal'}
+                                  onChange={e => handleUpdateKPI(kpi.id, 'frequencia', e.target.value)}
+                                  className="input-modern w-full py-1.5 px-3 text-sm appearance-none"
+                                >
+                                  <option value="diario">Diário</option>
+                                  <option value="semanal">Semanal</option>
+                                  <option value="mensal">Mensal</option>
+                                </select>
                               </div>
                             </div>
-                            <div>
-                              <label className="block text-xs text-text-sec mb-1">Como medir</label>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-text-sec mb-1">Como medir</label>
                               <input 
                                 value={kpi.descricao || ''}
                                 onChange={e => handleUpdateKPI(kpi.id, 'descricao', e.target.value)}

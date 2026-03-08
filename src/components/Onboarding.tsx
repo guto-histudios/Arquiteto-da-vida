@@ -105,6 +105,7 @@ export function Onboarding() {
               diasSemana: h.diasSemana || [0, 1, 2, 3, 4, 5, 6],
               horario: h.horario || '',
               conclusoes: [],
+              streak: 0,
             };
             adicionarHabito(newHabito);
           });

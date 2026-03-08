@@ -6,9 +6,11 @@ import { useKPIs } from '../hooks/useKPIs';
 import { useConfiguracoes } from '../hooks/useConfiguracoes';
 import { useGamification, BADGES_INFO } from '../hooks/useGamification';
 import { useHaraHachiBu } from '../hooks/useHaraHachiBu';
-import { Task, Habito, Meta, KPI, Configuracao, HorarioFixo, UserProfile, TaskStatus, HealthData, WorkoutPlan, GamificationState, BadgeInfo, DailyMeals } from '../types';
+import { Task, Habito, Meta, KPI, Configuracao, HorarioFixo, UserProfile, TaskStatus, HealthData, WorkoutPlan, GamificationState, BadgeInfo, DailyMeals, Recompensa } from '../types';
 import { getDataStringBrasil } from '../utils/dataUtils';
 import { THEMES } from '../utils/themeUtils';
+
+import { v4 as uuidv4 } from 'uuid';
 
 interface AppContextData {
   tasks: Task[];
@@ -17,6 +19,7 @@ interface AppContextData {
   atualizarTask: (id: string, updates: Partial<Task>) => void;
   removerTask: (id: string) => void;
   mudarStatus: (id: string, status: TaskStatus) => void;
+  adiarTask: (id: string, novaData: string) => void;
 
   habitos: Habito[];
   setHabitos: (habitos: Habito[]) => void;
@@ -36,12 +39,14 @@ interface AppContextData {
   setKPIs: (kpis: KPI[]) => void;
   adicionarKPI: (kpi: KPI) => void;
   atualizarKPI: (id: string, valor: number) => void;
+  editarKPI: (kpi: KPI) => void;
   removerKPI: (id: string) => void;
 
   config: Configuracao;
   atualizarConfig: (updates: Partial<Configuracao>) => void;
   horariosFixos: HorarioFixo[];
   adicionarHorarioFixo: (horario: HorarioFixo) => void;
+  atualizarHorarioFixo: (id: string, updates: Partial<HorarioFixo>) => void;
   removerHorarioFixo: (id: string) => void;
   userProfile: UserProfile | null;
   setUserProfile: (profile: UserProfile | null) => void;
@@ -61,6 +66,10 @@ interface AppContextData {
   unlockBadge: (badgeId: string) => void;
   getLevelInfo: (xp: number) => { nivel: number, xpAtualNoNivel: number, xpParaProximoNivel: number, progressoPercentual: number };
   badgesInfo: Record<string, BadgeInfo>;
+  addCoins: (amount: number, description: string) => void;
+  spendCoins: (amount: number, description: string) => boolean;
+  buyReward: (reward: Recompensa) => boolean;
+  useReward: (compraId: string) => void;
 
   carregando: boolean;
   activeTaskId: string | null;
@@ -84,6 +93,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const carregando = tasksHook.carregando || habitosHook.carregando || metasHook.carregando || kpisHook.carregando || configHook.carregando || gamificationHook.carregando || haraHachiBuHook.carregando;
 
+  // Auto-create tasks for fixed schedules
+  useEffect(() => {
+    if (carregando) return;
+    const hoje = getDataStringBrasil();
+    
+    configHook.horariosFixos.forEach(hf => {
+      const taskExists = tasksHook.tasks.some(t => 
+        t.data === hoje && t.horarioFixoId === hf.id
+      );
+      
+      if (!taskExists) {
+        let duracao = 60;
+        if (hf.horaFim) {
+           const [h1, m1] = hf.horaInicio.split(':').map(Number);
+           const [h2, m2] = hf.horaFim.split(':').map(Number);
+           let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+           if (diff < 0) diff += 24 * 60;
+           duracao = diff;
+        }
+
+        tasksHook.adicionarTask({
+          id: uuidv4(),
+          titulo: hf.descricao,
+          status: 'nao_iniciada',
+          data: hoje,
+          categoria: 'pessoal',
+          prioridade: 'media',
+          duracao: duracao,
+          tipoRepeticao: 'uma_vez',
+          horario: hf.horaInicio,
+          horarioFixo: true,
+          horarioFixoId: hf.id,
+          vezAtual: 1,
+          xpGanho: false,
+          pomodorosFeitos: 0
+        });
+      }
+    });
+  }, [configHook.horariosFixos, tasksHook.tasks, carregando]);
+
   // Apply theme
   useEffect(() => {
     if (configHook.carregando) return;
@@ -101,6 +150,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (status === 'concluida' && taskAnterior?.status !== 'concluida') {
         // Add XP
         gamificationHook.addXP(10);
+        // Add Coins
+        gamificationHook.addCoins(5, `Task concluída: ${task.titulo}`);
         
         // Badge: Iniciante
         gamificationHook.unlockBadge('iniciante');
@@ -122,11 +173,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const removerTask = (id: string) => {
+    const metaVinculada = metasHook.metas.find(m => m.tasksVinculadas?.includes(id));
+    if (metaVinculada) {
+      alert(`Atenção: Esta task está vinculada à meta "${metaVinculada.titulo}". Por favor, vincule outra task à meta.`);
+    }
+    tasksHook.removerTask(id);
+  };
+
+  const removerKPI = (id: string) => {
+    const metaVinculada = metasHook.metas.find(m => m.kpiVinculado === id);
+    if (metaVinculada) {
+      alert(`Atenção: Este KPI está vinculado à meta "${metaVinculada.titulo}". Por favor, vincule outro KPI à meta.`);
+    }
+    kpisHook.removerKPI(id);
+  };
+
   const toggleConclusaoHabito = (id: string, data: string) => {
     const habito = habitosHook.habitos.find(h => h.id === id);
     const conclusaoAtual = habito?.conclusoes.find(c => c.data === data)?.concluido;
     
-    habitosHook.toggleConclusao(id, data);
+    habitosHook.toggleConclusao(id, data, (habito) => {
+        // Add Coins
+        gamificationHook.addCoins(2, `Hábito cumprido: ${habito.nome}`);
+    });
     
     // Add XP if completed
     if (!conclusaoAtual) {
@@ -149,7 +219,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [habitosHook.habitos, carregando]);
 
-  // Check streak badges
+  // Check habit streaks for badges
+  useEffect(() => {
+    if (carregando) return;
+    
+    habitosHook.habitos.forEach(h => {
+      if (h.streak >= 7) {
+        gamificationHook.unlockBadge('7_dias');
+      }
+      if (h.streak >= 30) {
+        gamificationHook.unlockBadge('30_dias');
+      }
+    });
+  }, [habitosHook.habitos, carregando]);
+
+  // Check streak badges (Global)
   useEffect(() => {
     if (carregando) return;
     if (gamificationHook.gamification.streakDias >= 7) {
@@ -159,6 +243,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
       gamificationHook.unlockBadge('30_dias');
     }
   }, [gamificationHook.gamification.streakDias, carregando]);
+
+  // Automatic KPIs Update
+  useEffect(() => {
+    if (carregando) return;
+
+    const hoje = getDataStringBrasil();
+
+    kpisHook.kpis.forEach(kpi => {
+      if (kpi.tipoCalculo === 'automatico' && kpi.tipoAutomatico) {
+        let novoValor = kpi.valorAtual;
+
+        switch (kpi.tipoAutomatico) {
+          case 'tasks_concluidas':
+            novoValor = tasksHook.tasks.filter(t => t.data === hoje && t.status === 'concluida').length;
+            break;
+          case 'habitos_concluidos':
+            novoValor = habitosHook.habitos.filter(h => h.conclusoes.some(c => c.data === hoje && c.concluido)).length;
+            break;
+          case 'pomodoro_tempo':
+            // Sum pomodoros of tasks from today
+            const pomodorosHoje = tasksHook.tasks
+              .filter(t => t.data === hoje)
+              .reduce((acc, t) => acc + (t.pomodorosFeitos || 0), 0);
+            novoValor = pomodorosHoje * configHook.config.duracaoPomodoro;
+            break;
+          case 'xp_ganho':
+             novoValor = gamificationHook.gamification.xpDiario || 0; 
+             break;
+          case 'streak_atual':
+            novoValor = gamificationHook.gamification.streakDias;
+            break;
+        }
+
+        if (novoValor !== kpi.valorAtual) {
+          kpisHook.atualizarKPI(kpi.id, novoValor);
+        }
+      }
+    });
+  }, [
+    tasksHook.tasks, 
+    habitosHook.habitos, 
+    gamificationHook.gamification, 
+    kpisHook.kpis, 
+    configHook.config.duracaoPomodoro, 
+    carregando
+  ]);
 
   // Recalculate Metas progress when Tasks or KPIs change
   useEffect(() => {
@@ -234,8 +364,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTasks: tasksHook.setTasks,
       adicionarTask: tasksHook.adicionarTask,
       atualizarTask: tasksHook.atualizarTask,
-      removerTask: tasksHook.removerTask,
+      removerTask: removerTask,
       mudarStatus: mudarStatus,
+      adiarTask: tasksHook.adiarTask,
 
       habitos: habitosHook.habitos,
       setHabitos: habitosHook.setHabitos,
@@ -248,19 +379,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       metas: metasHook.metas,
       setMetas: metasHook.setMetas,
       adicionarMeta: metasHook.adicionarMeta,
-      atualizarMeta: metasHook.atualizarMeta,
+      atualizarMeta: (id, updates) => {
+        metasHook.atualizarMeta(id, updates, (meta) => {
+            gamificationHook.addCoins(20, `Meta concluída: ${meta.titulo}`);
+        });
+      },
       removerMeta: metasHook.removerMeta,
 
       kpis: kpisHook.kpis,
       setKPIs: kpisHook.setKPIs,
       adicionarKPI: kpisHook.adicionarKPI,
       atualizarKPI: kpisHook.atualizarKPI,
-      removerKPI: kpisHook.removerKPI,
+      editarKPI: kpisHook.editarKPI,
+      removerKPI: removerKPI,
 
       config: configHook.config,
       atualizarConfig: configHook.atualizarConfig,
       horariosFixos: configHook.horariosFixos,
       adicionarHorarioFixo: configHook.adicionarHorarioFixo,
+      atualizarHorarioFixo: configHook.atualizarHorarioFixo,
       removerHorarioFixo: configHook.removerHorarioFixo,
       userProfile: configHook.userProfile,
       setUserProfile: configHook.setUserProfile,
@@ -278,6 +415,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       unlockBadge: gamificationHook.unlockBadge,
       getLevelInfo: gamificationHook.getLevelInfo,
       badgesInfo: BADGES_INFO,
+      addCoins: gamificationHook.addCoins,
+      spendCoins: gamificationHook.spendCoins,
+      buyReward: gamificationHook.buyReward,
+      useReward: gamificationHook.useReward,
 
       carregando,
       activeTaskId,

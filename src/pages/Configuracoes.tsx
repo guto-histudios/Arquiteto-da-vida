@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Save, Trash2, Plus, Settings, Clock, AlertTriangle, RefreshCw, Palette } from 'lucide-react';
+import { Save, Trash2, Plus, Settings, Clock, AlertTriangle, RefreshCw, Palette, Edit2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { HorarioFixo, TipoHorarioFixo } from '../types';
 import { getDataStringBrasil } from '../utils/dataUtils';
@@ -9,9 +9,9 @@ import { THEMES } from '../utils/themeUtils';
 export function Configuracoes() {
   const { 
     userProfile, setUserProfile, 
-    horariosFixos, adicionarHorarioFixo, removerHorarioFixo, 
+    horariosFixos, adicionarHorarioFixo, removerHorarioFixo, atualizarHorarioFixo,
     config, atualizarConfig,
-    tasks, setTasks,
+    tasks, setTasks, atualizarTask,
     habitos, setHabitos
   } = useApp();
   
@@ -49,17 +49,58 @@ export function Configuracoes() {
     alert('Configurações salvas com sucesso!');
   };
 
+  const [editingHorarioId, setEditingHorarioId] = useState<string | null>(null);
+
   const handleAddHorario = () => {
     if (newHorario.horaInicio && newHorario.descricao) {
-      adicionarHorarioFixo({
-        id: uuidv4(),
-        tipo: newHorario.tipo as TipoHorarioFixo,
-        horaInicio: newHorario.horaInicio,
-        horaFim: newHorario.horaFim,
-        descricao: newHorario.descricao,
-      });
+      if (editingHorarioId) {
+        atualizarHorarioFixo(editingHorarioId, {
+          tipo: newHorario.tipo as TipoHorarioFixo,
+          horaInicio: newHorario.horaInicio,
+          horaFim: newHorario.horaFim,
+          descricao: newHorario.descricao,
+        });
+        
+        // Sync tasks
+        const tasksToUpdate = tasks.filter(t => t.horarioFixoId === editingHorarioId);
+        tasksToUpdate.forEach(task => {
+          let duracao = task.duracao;
+          if (newHorario.horaFim) {
+            const [h1, m1] = newHorario.horaInicio.split(':').map(Number);
+            const [h2, m2] = newHorario.horaFim.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diff < 0) diff += 24 * 60;
+            duracao = diff;
+          }
+          atualizarTask(task.id, {
+            horario: newHorario.horaInicio,
+            duracao: duracao,
+            titulo: newHorario.descricao
+          });
+        });
+        
+        setEditingHorarioId(null);
+      } else {
+        adicionarHorarioFixo({
+          id: uuidv4(),
+          tipo: newHorario.tipo as TipoHorarioFixo,
+          horaInicio: newHorario.horaInicio,
+          horaFim: newHorario.horaFim,
+          descricao: newHorario.descricao,
+        });
+      }
       setNewHorario({ tipo: 'outro', horaInicio: '', descricao: '' });
     }
+  };
+
+  const handleEditHorario = (horario: HorarioFixo) => {
+    setNewHorario({
+      tipo: horario.tipo,
+      horaInicio: horario.horaInicio,
+      horaFim: horario.horaFim || '',
+      descricao: horario.descricao
+    });
+    setEditingHorarioId(horario.id);
   };
 
   const handleFullReset = () => {
@@ -271,12 +312,20 @@ export function Configuracoes() {
                     <span className="font-bold text-lg text-white">{horario.horaInicio} {horario.horaFim ? `- ${horario.horaFim}` : ''}</span>
                     <p className="text-sm text-text-sec mt-1">{horario.descricao}</p>
                   </div>
-                  <button 
-                    onClick={() => removerHorarioFixo(horario.id)}
-                    className="text-text-sec hover:text-error p-2 bg-bg-main rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleEditHorario(horario)}
+                      className="text-text-sec hover:text-accent-blue p-2 bg-bg-main rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button 
+                      onClick={() => removerHorarioFixo(horario.id)}
+                      className="text-text-sec hover:text-error p-2 bg-bg-main rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
               {horariosFixos.length === 0 && (
@@ -285,7 +334,20 @@ export function Configuracoes() {
             </div>
 
             <div className="bg-bg-sec border border-border-subtle p-5 rounded-xl">
-              <h3 className="text-lg font-medium text-white mb-4">Adicionar Novo Horário</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-white">{editingHorarioId ? 'Editar Horário' : 'Adicionar Novo Horário'}</h3>
+                {editingHorarioId && (
+                  <button 
+                    onClick={() => {
+                      setEditingHorarioId(null);
+                      setNewHorario({ tipo: 'outro', horaInicio: '', descricao: '' });
+                    }}
+                    className="text-sm text-text-sec hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium mb-1 text-text-sec">Início</label>

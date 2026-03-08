@@ -4,14 +4,42 @@ import { KPICard } from '../components/kpis/KPICard';
 import { KPIForm } from '../components/kpis/KPIForm';
 import { KPIGeneratorModal } from '../components/kpis/KPIGeneratorModal';
 import { Plus, Activity, Sparkles } from 'lucide-react';
+import { KPI } from '../types';
 
 export function KPIs() {
-  const { kpis, adicionarKPI, atualizarKPI } = useApp();
+  const { kpis, adicionarKPI, atualizarKPI, editarKPI, removerKPI } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [editingKPI, setEditingKPI] = useState<KPI | undefined>(undefined);
 
-  const handleSaveGeneratedKPIs = (newKpis: any[]) => {
+  const handleSaveGeneratedKPIs = (newKpis: KPI[]) => {
     newKpis.forEach(kpi => adicionarKPI(kpi));
+  };
+
+  const handleEdit = (kpi: KPI) => {
+    setEditingKPI(kpi);
+    setIsFormOpen(true);
+  };
+
+  const handleSave = (kpi: KPI) => {
+    if (editingKPI) {
+      editarKPI(kpi);
+    } else {
+      adicionarKPI(kpi);
+    }
+    setIsFormOpen(false);
+    setEditingKPI(undefined);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este KPI?')) {
+      removerKPI(id);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingKPI(undefined);
   };
 
   return (
@@ -32,7 +60,10 @@ export function KPIs() {
             Gerar com IA
           </button>
           <button 
-            onClick={() => setIsFormOpen(true)}
+            onClick={() => {
+              setEditingKPI(undefined);
+              setIsFormOpen(true);
+            }}
             className="bg-gradient-to-r from-accent-purple to-pink-600 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-purple/25 active:scale-95 flex items-center gap-2"
           >
             <Plus size={20} />
@@ -44,7 +75,13 @@ export function KPIs() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {kpis.length > 0 ? (
           kpis.map(kpi => (
-            <KPICard key={kpi.id} kpi={kpi} onUpdate={atualizarKPI} />
+            <KPICard 
+              key={kpi.id} 
+              kpi={kpi} 
+              onUpdate={atualizarKPI} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           ))
         ) : (
           <div className="col-span-full glass-card flex flex-col items-center justify-center py-16 text-center">
@@ -59,9 +96,9 @@ export function KPIs() {
 
       {isFormOpen && (
         <KPIForm 
-          isOpen={isFormOpen} 
-          onClose={() => setIsFormOpen(false)} 
-          onSave={adicionarKPI} 
+          kpi={editingKPI}
+          onSave={handleSave}
+          onCancel={handleCloseForm}
         />
       )}
 
